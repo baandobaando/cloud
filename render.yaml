@@ -18,6 +18,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: APP_URL
+        value: https://binge.tube
       - key: NODE_VERSION
         value: "22.20.0"
       - key: DATA_DIR
