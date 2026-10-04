@@ -1,6 +1,6 @@
 // Deletes every resolution except the highest one on finished Bunny Stream videos.
 // Videos with a single resolution are left alone. Original source files are never deleted.
-// Usage: node --env-file=.env scripts/bunny-keep-highest.mjs [--dry-run] [--limit N] [--video <guid>]
+// Usage: node --env-file=.env scripts/bunny-keep-highest.mjs [--dry-run] [--limit N] [--video <guid>] [--concurrency N]
 const { BUNNY_LIBRARY_ID: lib, BUNNY_LIBRARY_KEY: key } = process.env
 if (!lib || !key) {
   console.error('Set BUNNY_LIBRARY_ID and BUNNY_LIBRARY_KEY first.')
@@ -10,6 +10,7 @@ const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
 const limit = args.includes('--limit') ? Number(args[args.indexOf('--limit') + 1]) : Infinity
 const only = args.includes('--video') ? args[args.indexOf('--video') + 1] : null
+const concurrency = args.includes('--concurrency') ? Number(args[args.indexOf('--concurrency') + 1]) : 4
 const base = `https://video.bunnycdn.com/library/${lib}`
 const headers = { AccessKey: key, Accept: 'application/json' }
 
@@ -56,7 +57,7 @@ let done = 0
 let failed = 0
 const queue = [...todo]
 await Promise.all(
-  Array.from({ length: 4 }, async () => {
+  Array.from({ length: concurrency }, async () => {
     for (let job = queue.shift(); job; job = queue.shift()) {
       const q = new URLSearchParams({
         resolutionsToDelete: job.remove.join(','),
