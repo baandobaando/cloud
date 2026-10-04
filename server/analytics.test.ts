@@ -11,7 +11,7 @@ const { buildAnalytics } = await import('./analytics.ts')
 const DAY = 86_400_000
 const now = Date.UTC(2026, 5, 15, 12)
 
-function user(daysAgo: number, paidCents?: number, provider = 'nowpayments') {
+function user(daysAgo: number, paidCents?: number, provider = 'stripe') {
   const t = now - daysAgo * DAY
   const id = Number(
     db.prepare("INSERT INTO users (email, password_hash, name, created_at) VALUES (?, 'x', 'U', ?)").run(`u${Math.random()}@x.co`, t).lastInsertRowid,

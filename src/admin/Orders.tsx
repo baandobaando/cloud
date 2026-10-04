@@ -35,7 +35,7 @@ function rangeStart(id: string): number {
   return d.getTime() - r.days * 86_400_000
 }
 
-const PROVIDERS: Record<string, string> = { nowpayments: 'NOWPayments', btcpay: 'BTCPay', test: 'Test' }
+const PROVIDERS: Record<string, string> = { stripe: 'Stripe', btcpay: 'BTCPay', nowpayments: 'NOWPayments', test: 'Test' }
 
 export default function Orders() {
   usePageTitle('Admin · Orders')
@@ -69,7 +69,7 @@ export default function Orders() {
       <div className="admin__head slist__head">
         <div>
           <h1>Orders</h1>
-          <p className="muted small">Every checkout started on BingeTube, with crypto processor status.</p>
+          <p className="muted small">Every checkout started on BingeTube, with the payment processor's status.</p>
         </div>
         <div className="admin__actions">
           <a className="btn btn--secondary btn--small" href={`/api/admin/orders.csv?${query}`} download>
@@ -103,7 +103,7 @@ export default function Orders() {
         </div>
         <select className="input input--small" value={provider} onChange={(e) => set({ provider: e.target.value })} aria-label="Payment processor">
           <option value="">All processors</option>
-          <option value="nowpayments">NOWPayments</option>
+          <option value="stripe">Stripe</option>
           <option value="btcpay">BTCPay</option>
           <option value="test">Test</option>
         </select>

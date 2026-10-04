@@ -77,7 +77,7 @@ export function OrderStatusPage() {
             <h1>{order.status === 'expired' ? 'Payment window expired' : 'Payment failed'}</h1>
             <p className="muted">{summary}</p>
             <p>
-              No access was granted. If you already sent funds, they're still being tracked. Contact support with
+              No access was granted and you weren't charged for this order. If you think you were, contact support with
               order <code>{order.id.slice(0, 8)}</code>.
             </p>
             <Link to="/plans" className="btn btn--accent btn--block">
@@ -87,11 +87,11 @@ export function OrderStatusPage() {
         ) : (
           <>
             <div className="spinner" />
-            <h1>{order.status === 'confirming' ? 'Confirming on the blockchain…' : 'Waiting for your payment…'}</h1>
+            <h1>{order.status === 'confirming' ? 'Confirming your payment…' : 'Waiting for your payment…'}</h1>
             <p className="muted">{summary}</p>
             <p>
               {order.status === 'confirming'
-                ? 'We see your payment. This usually takes a few minutes, depending on the coin.'
+                ? 'We see your payment. Some payment methods take a little while to clear; this page updates automatically.'
                 : "Finish paying in the checkout window. This page updates automatically. You can close it and come back anytime."}
             </p>
             {order.checkoutUrl && order.status === 'pending' && (
@@ -110,7 +110,7 @@ export function OrderStatusPage() {
   )
 }
 
-/** Development-only stand-in for a crypto processor's hosted checkout page. */
+/** Development-only stand-in for a payment processor's hosted checkout page. */
 export function TestCheckout() {
   const { orderId = '' } = useParams()
   const navigate = useNavigate()

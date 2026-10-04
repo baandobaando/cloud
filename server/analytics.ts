@@ -142,7 +142,7 @@ export function buildAnalytics(rangeId: string, now = Date.now()): AdminAnalytic
       users: one('SELECT COUNT(*) AS n FROM users'),
       activeMembers: activeSubs.length,
       // Run-rate counts paying members only; complimentary and test access don't bring in money.
-      mrrCents: activeSubs.filter((s) => s.source === 'crypto').reduce((n, s) => n + (getPlan(s.plan) ?? MEMBERSHIP).priceCents, 0),
+      mrrCents: activeSubs.filter((s) => s.source === 'card' || s.source === 'crypto').reduce((n, s) => n + (getPlan(s.plan) ?? MEMBERSHIP).priceCents, 0),
       seriesPublished: one('SELECT COUNT(*) AS n FROM series WHERE published = 1'),
       seriesDraft: one('SELECT COUNT(*) AS n FROM series WHERE published = 0'),
       episodes: one('SELECT COUNT(*) AS n FROM episodes'),

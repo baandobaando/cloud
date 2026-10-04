@@ -3,7 +3,7 @@ import { useSession } from '../state/Session'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Crypto passes don't auto-renew, so remind members shortly before access ends. */
+/** Passes are prepaid and don't auto-renew, so remind members shortly before access ends. */
 export default function RenewalBanner() {
   const { me } = useSession()
   const sub = me?.subscription

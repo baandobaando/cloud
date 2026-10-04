@@ -40,8 +40,7 @@ export default function Footer() {
         </nav>
       </div>
       <p className="footer__legal muted small">
-        © {year} BingeTube · <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> · Payments in crypto via NOWPayments or
-        BTCPay Server.
+        © {year} BingeTube · <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> · Secure payments by Stripe.
       </p>
     </footer>
   )

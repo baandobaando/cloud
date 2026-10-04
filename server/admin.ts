@@ -166,7 +166,7 @@ adminRouter.get('/stats', (_req, res) => {
     .prepare('SELECT plan, source FROM subscriptions WHERE current_period_end IS NULL OR current_period_end > ?')
     .all(now) as { plan: string; source: string }[]
   // Only paying members count toward run-rate; complimentary and test access don't bring in money.
-  const mrrCents = activeSubs.filter((s) => s.source === 'crypto').reduce((sum, s) => sum + (getPlan(s.plan) ?? MEMBERSHIP).priceCents, 0)
+  const mrrCents = activeSubs.filter((s) => s.source === 'card' || s.source === 'crypto').reduce((sum, s) => sum + (getPlan(s.plan) ?? MEMBERSHIP).priceCents, 0)
   const passesByLength: Record<number, number> = Object.fromEntries(DURATIONS.map((d) => [d.months, 0]))
   for (const r of db.prepare("SELECT months, COUNT(*) AS n FROM orders WHERE status = 'paid' GROUP BY months").all() as { months: number; n: number }[]) {
     passesByLength[r.months] = r.n

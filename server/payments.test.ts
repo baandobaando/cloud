@@ -7,8 +7,8 @@ import { before, describe, test } from 'node:test'
 
 // Configure an isolated database and fake processor credentials before importing server modules.
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'reelflix-test-'))
-process.env.NOWPAYMENTS_API_KEY = 'np_key'
-process.env.NOWPAYMENTS_IPN_SECRET = 'np_ipn_secret'
+process.env.STRIPE_SECRET_KEY = 'sk_test_key'
+process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test'
 process.env.BTCPAY_URL = 'https://btcpay.example.com'
 process.env.BTCPAY_API_KEY = 'btc_key'
 process.env.BTCPAY_STORE_ID = 'store1'
@@ -16,20 +16,15 @@ process.env.BTCPAY_WEBHOOK_SECRET = 'btc_webhook_secret'
 
 const { db } = await import('./db.ts')
 const { fulfillOrder } = await import('./billing.ts')
-const { nowpayments } = await import('./payments/nowpayments.ts')
+const { stripeProvider } = await import('./payments/stripe.ts')
 const { btcpay } = await import('./payments/btcpay.ts')
 const { WebhookSignatureError } = await import('./payments/types.ts')
 const { getSubscription } = await import('./models.ts')
 
 const DAY = 24 * 60 * 60 * 1000
 
-function npSign(payload: Record<string, unknown>, secret = 'np_ipn_secret') {
-  const sorted = Object.fromEntries(Object.keys(payload).sort().map((k) => [k, payload[k]]))
-  return crypto.createHmac('sha512', secret).update(JSON.stringify(sorted)).digest('hex')
-}
-
 let userId: number
-function createOrder(id: string, months = 1, provider = 'nowpayments', amountCents = 999) {
+function createOrder(id: string, months = 1, provider = 'btcpay', amountCents = 999) {
   db.prepare(
     `INSERT INTO orders (id, user_id, plan, months, amount_cents, provider, status, created_at)
      VALUES (?, ?, 'member', ?, ?, ?, 'pending', ?)`,
@@ -43,46 +38,74 @@ before(() => {
   userId = Number(lastInsertRowid)
 })
 
-describe('NOWPayments IPN', () => {
-  const payload = {
-    payment_id: 123,
-    payment_status: 'finished',
-    order_id: 'order-1',
-    price_amount: 9.99,
-    price_currency: 'usd',
-    pay_currency: 'btc',
-    invoice_id: 555,
-  }
+describe('Stripe webhook', () => {
+  const session = { id: 'cs_test_1', object: 'checkout.session', client_reference_id: 'order-1', amount_total: 999, currency: 'usd', payment_status: 'paid' }
+  const event = (type: string, obj: Record<string, unknown> = session) => Buffer.from(JSON.stringify({ id: 'evt_1', type, data: { object: obj } }))
+  const sign = (body: Buffer, secret = 'whsec_test', t = Math.floor(Date.now() / 1000)) =>
+    `t=${t},v1=${crypto.createHmac('sha256', secret).update(`${t}.${body.toString('utf8')}`).digest('hex')}`
 
-  test('accepts a correctly signed payload (keys in any order)', async () => {
-    const body = Buffer.from(JSON.stringify({ ...payload, invoice_id: 555, payment_id: 123 }))
-    const result = await nowpayments.parseWebhook(body, { 'x-nowpayments-sig': npSign(payload) })
-    assert.deepEqual(result, { orderId: 'order-1', invoiceId: '555', status: 'paid', amountCents: 999, payCurrency: 'BTC' })
+  test('accepts a correctly signed checkout.session.completed', async () => {
+    const body = event('checkout.session.completed')
+    const result = await stripeProvider.parseWebhook(body, { 'stripe-signature': sign(body) })
+    assert.deepEqual(result, { orderId: 'order-1', invoiceId: 'cs_test_1', status: 'paid', amountCents: 999, payCurrency: 'CARD' })
+  })
+
+  test('accepts any of several v1 signatures (secret rotation)', async () => {
+    const body = event('checkout.session.completed')
+    const good = sign(body)
+    const header = `${good.split(',')[0]},v1=${'0'.repeat(64)},${good.split(',')[1]}`
+    assert.equal((await stripeProvider.parseWebhook(body, { 'stripe-signature': header }))?.status, 'paid')
   })
 
   test('rejects a tampered payload', async () => {
-    const sig = npSign(payload)
-    const body = Buffer.from(JSON.stringify({ ...payload, price_amount: 1000 }))
-    await assert.rejects(nowpayments.parseWebhook(body, { 'x-nowpayments-sig': sig }), WebhookSignatureError)
+    const header = sign(event('checkout.session.completed'))
+    const tampered = event('checkout.session.completed', { ...session, amount_total: 1 })
+    await assert.rejects(stripeProvider.parseWebhook(tampered, { 'stripe-signature': header }), WebhookSignatureError)
   })
 
-  test('rejects a payload signed with the wrong secret', async () => {
-    const body = Buffer.from(JSON.stringify(payload))
-    await assert.rejects(
-      nowpayments.parseWebhook(body, { 'x-nowpayments-sig': npSign(payload, 'wrong') }),
-      WebhookSignatureError,
-    )
+  test('rejects the wrong secret, a stale timestamp and a missing header', async () => {
+    const body = event('checkout.session.completed')
+    await assert.rejects(stripeProvider.parseWebhook(body, { 'stripe-signature': sign(body, 'whsec_other') }), WebhookSignatureError)
+    const old = Math.floor(Date.now() / 1000) - 3600
+    await assert.rejects(stripeProvider.parseWebhook(body, { 'stripe-signature': sign(body, 'whsec_test', old) }), WebhookSignatureError)
+    await assert.rejects(stripeProvider.parseWebhook(body, {}), WebhookSignatureError)
   })
 
-  test('rejects a missing signature', async () => {
-    await assert.rejects(nowpayments.parseWebhook(Buffer.from('{}'), {}), WebhookSignatureError)
+  test('maps checkout events to order statuses', async () => {
+    const cases: [string, Record<string, unknown>, string | null][] = [
+      ['checkout.session.completed', { ...session, payment_status: 'unpaid' }, 'confirming'],
+      ['checkout.session.async_payment_succeeded', session, 'paid'],
+      ['checkout.session.async_payment_failed', session, 'failed'],
+      ['checkout.session.expired', session, 'expired'],
+      ['payment_intent.created', session, null],
+    ]
+    for (const [type, obj, want] of cases) {
+      const body = event(type, obj)
+      const r = await stripeProvider.parseWebhook(body, { 'stripe-signature': sign(body) })
+      assert.equal(r?.status ?? null, want, type)
+    }
   })
 
-  test('maps processor statuses', async () => {
-    for (const [np, ours] of [['waiting', 'pending'], ['confirming', 'confirming'], ['partially_paid', 'pending'], ['expired', 'expired']]) {
-      const p = { ...payload, payment_status: np }
-      const r = await nowpayments.parseWebhook(Buffer.from(JSON.stringify(p)), { 'x-nowpayments-sig': npSign(p) })
-      assert.equal(r?.status, ours, np)
+  test('creates a one-time Checkout Session for the order', async () => {
+    const realFetch = globalThis.fetch
+    let sent: URLSearchParams | undefined
+    let auth = ''
+    globalThis.fetch = (async (_url: string, init: RequestInit) => {
+      sent = init.body as URLSearchParams
+      auth = (init.headers as Record<string, string>).Authorization
+      return new Response(JSON.stringify({ id: 'cs_new', url: 'https://checkout.stripe.com/c/pay/cs_new' }), { status: 200 })
+    }) as typeof fetch
+    try {
+      const r = await stripeProvider.createInvoice({ orderId: 'o-9', amountCents: 2697, description: 'Pass', returnUrl: 'https://x/ok', cancelUrl: 'https://x/plans', email: 'a@b.co' })
+      assert.deepEqual(r, { invoiceId: 'cs_new', checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_new' })
+      assert.equal(auth, 'Bearer sk_test_key')
+      assert.equal(sent!.get('mode'), 'payment')
+      assert.equal(sent!.get('client_reference_id'), 'o-9')
+      assert.equal(sent!.get('line_items[0][price_data][unit_amount]'), '2697')
+      assert.equal(sent!.get('cancel_url'), 'https://x/plans')
+      assert.equal(sent!.get('customer_email'), 'a@b.co')
+    } finally {
+      globalThis.fetch = realFetch
     }
   })
 })
@@ -115,6 +138,18 @@ describe('BTCPay webhook', () => {
 })
 
 describe('fulfillOrder', () => {
+  test('a Stripe order is recorded as a card pass', () => {
+    const { lastInsertRowid } = db
+      .prepare("INSERT INTO users (email, password_hash, name, created_at) VALUES ('card@test.com', 'x', 'Card', ?)")
+      .run(Date.now())
+    const cardUser = Number(lastInsertRowid)
+    db.prepare(
+      `INSERT INTO orders (id, user_id, plan, months, amount_cents, provider, status, created_at) VALUES ('s-1', ?, 'member', 1, 999, 'stripe', 'pending', ?)`,
+    ).run(cardUser, Date.now())
+    assert.equal(fulfillOrder('s-1', 'CARD'), true)
+    assert.equal(getSubscription(cardUser)!.source, 'card')
+  })
+
   test('grants access, and a repeated notification is a no-op', () => {
     createOrder('f-1', 1)
     const before = Date.now()

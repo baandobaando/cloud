@@ -553,7 +553,7 @@ function Paywall({ series, episode }: { series: Series; episode: Episode }) {
         <p>
           {series.freeEpisodes > 0 ? `You watched the first ${series.freeEpisodes} free. ` : ''}Become a member to watch all{' '}
           {series.episodes.length} episodes of <em>{series.title}</em> and every other series, with no coins and no
-          per-episode unlocks. Pay with crypto.
+          per-episode unlocks. Pay by card, Apple Pay or Google Pay.
         </p>
         <Link to={`/plans?return=${encodeURIComponent(`/watch/${series.id}/${episode.number}`)}`} className="btn btn--accent btn--block">
           Join for $9.99/month

@@ -8,7 +8,7 @@ import { ErrorState, Spinner } from '../components/Feedback'
 import Icon, { type IconName } from '../components/Icon'
 import { usePageTitle } from '../usePageTitle'
 
-const PROVIDER_ICONS: Record<PaymentProviderId, IconName> = { nowpayments: 'coins', btcpay: 'bitcoin', test: 'check' }
+const PROVIDER_ICONS: Record<PaymentProviderId, IconName> = { stripe: 'card', btcpay: 'bitcoin', test: 'check' }
 
 export default function Plans() {
   usePageTitle('Membership')
@@ -60,7 +60,7 @@ export default function Plans() {
         <p className="muted">
           {activeUntil
             ? `You're a member until ${new Date(activeUntil).toLocaleDateString(undefined, { dateStyle: 'medium' })}. New time is added on top.`
-            : `${formatPrice(MEMBERSHIP.priceCents)} a month, paid in crypto. Nothing renews automatically.`}
+            : `${formatPrice(MEMBERSHIP.priceCents)} a month. Prepaid, so nothing renews automatically.`}
         </p>
         <ul className="perks">
           {MEMBERSHIP.perks.map((perk) => (
@@ -138,8 +138,8 @@ export default function Plans() {
         </div>
         {checkoutError && <div className="form__error">{checkoutError}</div>}
         <p className="muted small">
-          Priced in USD. You pay the equivalent in your chosen coin at the current rate, and access starts once the
-          payment confirms on-chain.
+          Priced in USD. You'll finish paying on a secure Stripe page, and access starts as soon as the payment goes
+          through.
         </p>
       </section>
     </main>

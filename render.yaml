@@ -46,9 +46,9 @@ services:
       - key: BUNNY_KEEP_HIGHEST_ONLY
         value: "on"
       # Payment keys — optional at first; add them later under Environment.
-      - key: NOWPAYMENTS_API_KEY
+      - key: STRIPE_SECRET_KEY
         sync: false
-      - key: NOWPAYMENTS_IPN_SECRET
+      - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: BTCPAY_URL
         sync: false

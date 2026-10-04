@@ -21,9 +21,9 @@ If you have questions, contact us at ${contact}.</p>
   your name, email address, whether that email is verified, and a unique account identifier from that provider. See section 3 for details
   about Google user data.</li>
   <li><strong>Viewing activity.</strong> The series and episodes you watch, your playback position, your profiles and your My List.</li>
-  <li><strong>Payment information.</strong> Memberships are paid in cryptocurrency through third-party processors (NOWPayments or BTCPay
-  Server). We record the order, amount, pass length, coin and payment status. We do not receive card numbers, bank details or wallet
-  private keys.</li>
+  <li><strong>Payment information.</strong> Memberships are paid through Stripe, which processes your card, Apple Pay or Google
+  Pay payment on its own secure page. We record the order, amount, pass length and payment status. We never receive or store your full
+  card number or bank details.</li>
   <li><strong>Technical information.</strong> Essential cookies that keep you signed in, and server logs such as IP address, browser type
   and request times, used for security and troubleshooting.</li>
 </ul>
@@ -61,7 +61,7 @@ calendar or any other Google data.</p>
 <h2>4. How we share information</h2>
 <ul>
   <li><strong>Service providers</strong> that operate parts of BingeTube on our behalf and only for that purpose: hosting (Render), video
-  storage and delivery (Bunny.net), payment processing (NOWPayments, BTCPay Server) and sign-in (Google, Apple).</li>
+  storage and delivery (Bunny.net), payment processing (Stripe) and sign-in (Google, Apple).</li>
   <li><strong>Legal reasons:</strong> if required by law, or to protect the rights, property or safety of BingeTube, our users or others.</li>
   <li><strong>Business transfers:</strong> if BingeTube is involved in a merger or sale, information may transfer as part of that
   transaction, subject to this policy.</li>
@@ -118,8 +118,8 @@ watching on BingeTube you agree to them. If you do not agree, please do not use 
   <li>Some episodes are free. A membership pass unlocks every episode of every series for the length you buy (1, 3 or 12 months), at the
   prices shown on the <a href="/plans">Plans</a> page.</li>
   <li>Passes are prepaid and do not renew automatically. Buying another pass adds time to your current one.</li>
-  <li>Payments are made in cryptocurrency through third-party processors, whose terms also apply. Blockchain network fees are not set by
-  us.</li>
+  <li>Payments are processed by Stripe, whose terms also apply. Prices are in US dollars; your bank may add currency conversion
+  fees.</li>
   <li>Because access starts immediately, payments are generally non-refundable. If something went wrong with a payment or your access,
   contact us and we will look into it.</li>
   <li>We may change prices for future purchases; passes you have already bought are not affected.</li>

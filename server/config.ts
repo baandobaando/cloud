@@ -15,10 +15,10 @@ export const config = {
     (isProduction ? '' : 'http://localhost:5173')
   ).replace(/\/$/, ''),
   dataDir: path.resolve(env.DATA_DIR ?? 'data'),
-  nowpayments: {
-    apiKey: env.NOWPAYMENTS_API_KEY ?? '',
-    ipnSecret: env.NOWPAYMENTS_IPN_SECRET ?? '',
-    sandbox: env.NOWPAYMENTS_SANDBOX === 'true',
+  /** Stripe Checkout: secret key (sk_live_… / sk_test_…) and the signing secret of the webhook endpoint (whsec_…). */
+  stripe: {
+    secretKey: env.STRIPE_SECRET_KEY ?? '',
+    webhookSecret: env.STRIPE_WEBHOOK_SECRET ?? '',
   },
   btcpay: {
     url: (env.BTCPAY_URL ?? '').replace(/\/$/, ''),

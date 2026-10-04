@@ -149,9 +149,9 @@ function seed(): DB {
 
   // A few example members so the admin dashboard has something to show.
   const examples: [string, PlanId, number, string, string][] = [
-    ['maya.r@example.com', 'member', 3, 'nowpayments', 'USDT'],
+    ['maya.r@example.com', 'member', 3, 'stripe', 'CARD'],
     ['jordan.k@example.com', 'member', 12, 'btcpay', 'BTC'],
-    ['sam.t@example.com', 'member', 1, 'nowpayments', 'ETH'],
+    ['sam.t@example.com', 'member', 1, 'stripe', 'CARD'],
     ['lee.w@example.com', 'member', 1, 'btcpay', 'BTC'],
   ]
   const users: User[] = [
@@ -186,7 +186,7 @@ function seed(): DB {
     plan: 'member',
     months: 3,
     amountCents: priceFor(MEMBERSHIP, 3),
-    provider: 'nowpayments',
+    provider: 'stripe',
     status: 'expired',
     payCurrency: null,
     createdAt: now - 6 * DAY,

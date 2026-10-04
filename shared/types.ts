@@ -93,7 +93,7 @@ export function priceFor(plan: Plan, months: number): number {
   return Math.round((plan.priceCents * months * (100 - d.discountPct)) / 100)
 }
 
-export type PaymentProviderId = 'nowpayments' | 'btcpay' | 'test'
+export type PaymentProviderId = 'stripe' | 'btcpay' | 'test'
 
 export interface PaymentProviderInfo {
   id: PaymentProviderId
@@ -119,7 +119,8 @@ export interface SubscriptionView {
   plan: PlanId
   /** Unix ms when access ends. Null for complimentary access with no end date. */
   currentPeriodEnd: number | null
-  source: 'crypto' | 'test' | 'comp'
+  /** 'card' = paid through Stripe, 'crypto' = paid through BTCPay (or the old NOWPayments). */
+  source: 'card' | 'crypto' | 'test' | 'comp'
 }
 
 export interface Profile {

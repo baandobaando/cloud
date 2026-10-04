@@ -103,7 +103,7 @@ test('sign out everywhere, then delete a user; admins are protected', async () =
 
 test('orders: stale pending reads as expired, search and CSV work, mark paid logs', async () => {
   const u = addUser('buyer@x.co')
-  const ins = db.prepare("INSERT INTO orders (id, user_id, plan, months, amount_cents, provider, status, created_at) VALUES (?, ?, 'member', 1, 999, 'nowpayments', ?, ?)")
+  const ins = db.prepare("INSERT INTO orders (id, user_id, plan, months, amount_cents, provider, status, created_at) VALUES (?, ?, 'member', 1, 999, 'stripe', ?, ?)")
   ins.run('old-pending', u, 'pending', Date.now() - 3 * DAY)
   ins.run('new-pending', u, 'pending', Date.now())
   ins.run('done', u, 'paid', Date.now())

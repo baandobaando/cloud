@@ -6,6 +6,10 @@ export interface InvoiceRequest {
   description: string
   /** Where the processor should send the buyer after paying. */
   returnUrl: string
+  /** Where to send the buyer if they back out of checkout (defaults to returnUrl). */
+  cancelUrl?: string
+  /** Prefills the buyer's email on the processor's checkout page. */
+  email?: string
 }
 
 export interface WebhookResult {

@@ -16,11 +16,11 @@ import { db, transaction } from './db.ts'
 import { HttpError, int, rateLimit, str } from './http.ts'
 import { getSubscription } from './models.ts'
 import { btcpay } from './payments/btcpay.ts'
-import { nowpayments } from './payments/nowpayments.ts'
+import { stripeProvider } from './payments/stripe.ts'
 import { testProvider } from './payments/test.ts'
 import { WebhookSignatureError, type PaymentProvider } from './payments/types.ts'
 
-const PROVIDERS: PaymentProvider[] = [nowpayments, btcpay, testProvider]
+const PROVIDERS: PaymentProvider[] = [stripeProvider, btcpay, testProvider]
 const DAY_MS = 24 * 60 * 60 * 1000
 /** Unpaid orders are treated as expired after this long. */
 export const ORDER_TTL_MS = DAY_MS
@@ -82,7 +82,7 @@ export function fulfillOrder(orderId: string, payCurrency?: string): boolean {
 
     const order = getOrder(orderId)!
     const current = getSubscription(order.user_id)
-    const source = order.provider === 'test' ? 'test' : 'crypto'
+    const source = order.provider === 'test' ? 'test' : order.provider === 'stripe' ? 'card' : 'crypto'
 
     if (current && current.currentPeriodEnd === null) {
       // Already has open-ended complimentary access; just switch the plan.
@@ -128,7 +128,7 @@ billingRouter.get('/config', (_req, res) => {
 
 // ----- Webhooks (raw body, no session) -----
 
-for (const p of [nowpayments, btcpay]) {
+for (const p of [stripeProvider, btcpay]) {
   billingRouter.post(`/webhooks/${p.info.id}`, async (req, res) => {
     if (!p.isConfigured()) throw new HttpError(404, 'Not configured')
     if (!Buffer.isBuffer(req.body)) throw new HttpError(400, 'Expected raw body')
@@ -190,6 +190,8 @@ billingRouter.post('/orders', rateLimit({ windowMs: 10 * 60 * 1000, max: 20 }), 
       amountCents,
       description: `BingeTube membership — ${months} month${months > 1 ? 's' : ''}`,
       returnUrl: `${config.appUrl}/billing/order/${id}`,
+      cancelUrl: `${config.appUrl}/plans`,
+      email: req.user!.email,
     })
     db.prepare('UPDATE orders SET provider_invoice_id = ?, checkout_url = ? WHERE id = ?').run(invoiceId, checkoutUrl, id)
     res.status(201).json({ orderId: id, checkoutUrl })

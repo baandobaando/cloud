@@ -337,7 +337,7 @@ export function registerPeopleRoutes(router: Router) {
     if (remaining && sub!.currentPeriodEnd === null && days !== null) throw new HttpError(400, 'This user already has access with no end date')
     const base = remaining && sub!.currentPeriodEnd ? sub!.currentPeriodEnd : now
     const end = days === null ? null : base + days * DAY_MS
-    // Keep "crypto" when stacking on a paid pass so reporting still counts the paying member.
+    // Keep the paid source ("card"/"crypto") when stacking on a paid pass so reporting still counts the paying member.
     const source = remaining && sub!.source !== 'comp' ? sub!.source : 'comp'
     db.prepare(
       `INSERT INTO subscriptions (user_id, plan, current_period_end, source, updated_at) VALUES (?, ?, ?, ?, ?)

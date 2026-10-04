@@ -57,7 +57,7 @@ export default function Account() {
         {sub && !ended ? (
           <>
             <p className="panel__big">
-              Member <span className="tag">{sub.source === 'comp' ? 'Complimentary' : sub.source === 'test' ? 'Test' : 'Crypto pass'}</span>
+              Member <span className="tag">{sub.source === 'comp' ? 'Complimentary' : sub.source === 'test' ? 'Test' : sub.source === 'card' ? 'Prepaid pass' : 'Crypto pass'}</span>
             </p>
             <p className="muted">
               {sub.currentPeriodEnd === null
