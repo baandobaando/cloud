@@ -5,6 +5,7 @@ import Icon from '../components/Icon'
 import { api, errorMessage } from '../api'
 import { useSession } from '../state/Session'
 import { ErrorState, Spinner } from '../components/Feedback'
+import { usePageTitle } from '../usePageTitle'
 
 
 function takeReturnPath(): string {
@@ -19,6 +20,7 @@ function takeReturnPath(): string {
 
 /** Where buyers land after paying. Polls until the payment is confirmed. */
 export function OrderStatusPage() {
+  usePageTitle('Payment')
   const { orderId = '' } = useParams()
   const { refreshMe } = useSession()
   const navigate = useNavigate()

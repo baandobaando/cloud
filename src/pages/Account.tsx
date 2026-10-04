@@ -6,6 +6,8 @@ import { ResetDemoButton } from '../demo/DemoHints'
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import { useToast } from '../components/Toast'
+import { useDialog } from '../components/Dialog'
+import { usePageTitle } from '../usePageTitle'
 
 const STATUS_LABEL: Record<OrderView['status'], string> = {
   pending: 'Awaiting payment',
@@ -16,15 +18,18 @@ const STATUS_LABEL: Record<OrderView['status'], string> = {
 }
 
 export default function Account() {
+  usePageTitle('Account')
   const { me, logout, selectProfile } = useSession()
   const navigate = useNavigate()
   const toast = useToast()
-  const { data: orders } = useApi<OrderView[]>('/billing/orders')
+  const dialog = useDialog()
+  const { data: orders, error: ordersError, reload: reloadOrders } = useApi<OrderView[]>('/billing/orders')
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [busy, setBusy] = useState(false)
 
   if (!me) return null
+  const hasPassword = me.hasPassword !== false
   const sub = me.subscription
   const ended = sub?.currentPeriodEnd !== null && sub?.currentPeriodEnd !== undefined && sub.currentPeriodEnd < Date.now()
 
@@ -32,8 +37,8 @@ export default function Account() {
     e.preventDefault()
     setBusy(true)
     try {
-      await api.post('/auth/password', { currentPassword: current, newPassword: next })
-      toast('Password updated. Other devices were signed out.', 'success')
+      await api.post('/auth/password', { currentPassword: hasPassword ? current : undefined, newPassword: next })
+      toast(hasPassword ? 'Password updated. Other devices were signed out.' : 'Password set. You can now also sign in with your email.', 'success')
       setCurrent('')
       setNext('')
     } catch (err) {
@@ -75,7 +80,14 @@ export default function Account() {
 
       <section className="panel">
         <h2>Payment history</h2>
-        {!orders ? (
+        {ordersError && !orders ? (
+          <p className="muted">
+            Couldn't load your payments.{' '}
+            <button className="btn btn--link" onClick={reloadOrders}>
+              Try again
+            </button>
+          </p>
+        ) : !orders ? (
           <p className="muted">Loading…</p>
         ) : orders.length === 0 ? (
           <p className="muted">No payments yet.</p>
@@ -116,11 +128,31 @@ export default function Account() {
       <section className="panel">
         <h2>Sign-in details</h2>
         <p className="muted">{me.email}</p>
+        {!hasPassword && <p className="muted small">You sign in with Google or Apple. Set a password to also sign in with your email.</p>}
         <form className="form form--inline" onSubmit={changePassword}>
-          <input type="password" autoComplete="current-password" placeholder="Current password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
-          <input type="password" autoComplete="new-password" placeholder="New password (8+)" required minLength={8} value={next} onChange={(e) => setNext(e.target.value)} />
+          {hasPassword && (
+            <input
+              type="password"
+              autoComplete="current-password"
+              placeholder="Current password"
+              aria-label="Current password"
+              required
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+            />
+          )}
+          <input
+            type="password"
+            autoComplete="new-password"
+            placeholder="New password (8+)"
+            aria-label="New password"
+            required
+            minLength={8}
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+          />
           <button className="btn btn--secondary" disabled={busy}>
-            Change password
+            {hasPassword ? 'Change password' : 'Set password'}
           </button>
         </form>
       </section>
@@ -133,6 +165,36 @@ export default function Account() {
           Sign out
         </button>
         {IS_DEMO && <ResetDemoButton />}
+      </section>
+
+      <section className="panel">
+        <h2>Delete account</h2>
+        <p className="muted small">Permanently deletes your account, profiles, My List and watch history. Any remaining pass time is lost.</p>
+        <button
+          className="btn btn--danger btn--small"
+          disabled={me.isAdmin}
+          title={me.isAdmin ? 'Admin accounts cannot be deleted here' : undefined}
+          onClick={async () => {
+            const typed = await dialog.prompt({
+              title: 'Delete your BingeTube account?',
+              message: "This can't be undone. Type DELETE to confirm.",
+              requireText: 'DELETE',
+              confirmLabel: 'Delete my account',
+              danger: true,
+            })
+            if (typed !== 'DELETE') return
+            try {
+              await api.post('/auth/delete-account', { confirm: true })
+              await logout()
+              navigate('/')
+              toast('Your account was deleted', 'success')
+            } catch (err) {
+              toast(errorMessage(err), 'error')
+            }
+          }}
+        >
+          Delete my account
+        </button>
       </section>
     </main>
   )

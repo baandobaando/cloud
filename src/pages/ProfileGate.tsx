@@ -86,7 +86,7 @@ export default function ProfileGate() {
       </div>
       {adding && (
         <form className="gate__form" onSubmit={add}>
-          <input autoFocus placeholder="Name" value={name} maxLength={16} onChange={(e) => setName(e.target.value)} />
+          <input autoFocus aria-label="Name" placeholder="Name" value={name} maxLength={16} onChange={(e) => setName(e.target.value)} />
           <button className="btn btn--primary" type="submit">
             Save
           </button>

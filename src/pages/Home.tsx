@@ -7,11 +7,13 @@ import SeriesCard from '../components/SeriesCard'
 import GenreTiles from '../components/GenreTiles'
 import { ErrorState, Spinner } from '../components/Feedback'
 import RenewalBanner from '../components/RenewalBanner'
+import { usePageTitle } from '../usePageTitle'
 
 const SHELF_SIZE = 12
 const GRID_PAGE = 18
 
 export default function Home() {
+  usePageTitle()
   const { catalog, catalogError, progress, myList } = useSession()
   const [shown, setShown] = useState(GRID_PAGE)
 

@@ -9,6 +9,7 @@ import { ErrorState, Spinner } from '../components/Feedback'
 import { useDialog } from '../components/Dialog'
 import { useToast } from '../components/Toast'
 import BunnyImport, { timeAgo, type BunnyStatus } from './BunnyImport'
+import { usePageTitle } from '../usePageTitle'
 
 type StatusFilter = 'all' | 'live' | 'draft' | 'attention'
 type Sort = 'updated' | 'episodes' | 'views' | 'newest' | 'az'
@@ -39,6 +40,7 @@ function savedView(): View {
 }
 
 export default function SeriesList() {
+  usePageTitle('Admin · Series')
   const { data, error, loading, reload } = useApi<AdminSeries[]>('/admin/series')
   const bunny = useApi<BunnyStatus>(IS_DEMO ? null : '/admin/bunny/status')
   const dialog = useDialog()

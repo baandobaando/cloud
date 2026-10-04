@@ -17,6 +17,7 @@ import { useDialog } from '../components/Dialog'
 import Icon from '../components/Icon'
 import { useVideoSource } from '../useVideoSource'
 import { Drawer } from './ui'
+import { usePageTitle } from '../usePageTitle'
 
 const EMPTY: SeriesInput = {
   title: '',
@@ -72,6 +73,7 @@ export default function SeriesEditor() {
   const { data: loaded, setData: setLoaded, error, reload } = useApi<AdminSeriesDetail>(
     isNew ? null : `/admin/series/${encodeURIComponent(seriesId)}`,
   )
+  usePageTitle(isNew ? 'Admin · New series' : loaded ? `Admin · ${loaded.title}` : 'Admin · Series')
   const [form, setForm] = useState<SeriesInput>(EMPTY)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)

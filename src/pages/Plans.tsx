@@ -6,10 +6,12 @@ import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import { ErrorState, Spinner } from '../components/Feedback'
 import Icon, { type IconName } from '../components/Icon'
+import { usePageTitle } from '../usePageTitle'
 
 const PROVIDER_ICONS: Record<PaymentProviderId, IconName> = { nowpayments: 'coins', btcpay: 'bitcoin', test: 'check' }
 
 export default function Plans() {
+  usePageTitle('Membership')
   const { me } = useSession()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -129,7 +131,7 @@ export default function Plans() {
               {busy ? 'Starting checkout…' : 'Continue to payment'}
             </button>
           ) : (
-            <button className="btn btn--accent btn--lg" onClick={() => navigate('/signup?next=/plans')}>
+            <button className="btn btn--accent btn--lg" onClick={() => navigate(`/signup?next=${encodeURIComponent(`/plans${params.toString() ? `?${params}` : ''}`)}`)}>
               Create account to continue
             </button>
           )}

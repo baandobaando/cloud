@@ -445,6 +445,15 @@ on('POST', '/auth/login', (db, _m, b) => {
   return { ok: true }
 })
 
+on('POST', '/auth/delete-account', (db, _m, b) => {
+  const u = currentUser(db) ?? fail(401, 'Please sign in')
+  if (b.confirm !== true) fail(400, 'Please confirm you want to delete your account')
+  if (u.isAdmin) fail(400, 'Admin accounts cannot be deleted from here')
+  db.users = db.users.filter((x) => x.id !== u.id)
+  delete db.subs[u.id]
+  db.sessionUserId = null
+  return { ok: true }
+})
 on('POST', '/auth/logout', (db) => {
   db.sessionUserId = null
   return { ok: true }

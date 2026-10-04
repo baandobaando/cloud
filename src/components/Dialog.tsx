@@ -12,6 +12,8 @@ interface PromptOptions extends ConfirmOptions {
   placeholder?: string
   /** If set, the confirm button stays disabled until the input matches exactly. */
   requireText?: string
+  /** Allow confirming with an empty input (e.g. an optional note). */
+  optional?: boolean
 }
 
 interface DialogApi {
@@ -61,18 +63,42 @@ function DialogView({ pending, onDone }: { pending: Pending; onDone: () => void 
     onDone()
   }
 
-  useEffect(() => {
-    if (pending.kind === 'confirm') confirmBtn.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && cancel()
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  })
+  const cancelRef = useRef(cancel)
+  cancelRef.current = cancel
+  const card = useRef<HTMLFormElement>(null)
 
-  const blocked = prompt ? (prompt.requireText ? value.trim() !== prompt.requireText : !value.trim()) : false
+  // Focus the dialog, keep Tab inside it, close on Escape, and give focus back to what opened it.
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null
+    if (pending.kind === 'confirm') confirmBtn.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') cancelRef.current()
+      if (e.key === 'Tab' && card.current) {
+        const items = card.current.querySelectorAll<HTMLElement>('button:not([disabled]), input')
+        const first = items[0]
+        const last = items[items.length - 1]
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last?.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first?.focus()
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      previous?.focus?.()
+    }
+  }, [pending.kind])
+
+  const blocked = prompt ? (prompt.requireText ? value.trim() !== prompt.requireText : !prompt.optional && !value.trim()) : false
 
   return (
     <div className="modal" onClick={cancel}>
       <form
+        ref={card}
         className="modal__card"
         role="dialog"
         aria-modal="true"
@@ -93,6 +119,7 @@ function DialogView({ pending, onDone }: { pending: Pending; onDone: () => void 
             value={value}
             placeholder={prompt.placeholder ?? prompt.requireText}
             maxLength={120}
+            aria-label={prompt.placeholder ?? opts.title}
             onChange={(e) => setValue(e.target.value)}
           />
         )}

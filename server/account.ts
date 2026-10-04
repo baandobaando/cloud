@@ -22,6 +22,7 @@ accountRouter.get('/me', (req, res) => {
     subscription: getSubscription(req.user.id),
     isEntitled: isEntitled(req.user),
     profiles,
+    hasPassword: (db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.user.id) as { password_hash: string }).password_hash.startsWith('scrypt$'),
   }
   res.json(me)
 })

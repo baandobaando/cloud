@@ -5,6 +5,7 @@ import Icon from '../components/Icon'
 import { useApi } from '../useApi'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { BarList, Delta, SERIES, Sparkline, TimeChart } from './charts'
+import { usePageTitle } from '../usePageTitle'
 
 const RANGE_KEY = 'bingetube:admin-range'
 
@@ -28,6 +29,7 @@ function savedRange(): AnalyticsRange {
 }
 
 export default function Dashboard() {
+  usePageTitle('Admin · Dashboard')
   const [range, setRange] = useState<AnalyticsRange>(savedRange)
   const { data: a, error, reload } = useApi<AdminAnalytics>(`/admin/analytics?range=${range}`)
   const choose = (r: AnalyticsRange) => {

@@ -6,6 +6,7 @@ import { useSession } from '../state/Session'
 import Poster from '../components/Poster'
 import Logo from '../components/Logo'
 import Icon, { type IconName } from '../components/Icon'
+import { usePageTitle } from '../usePageTitle'
 
 const POINTS: { icon: IconName; title: string; text: string }[] = [
   { icon: 'phone', title: 'Made for your phone', text: 'Vertical episodes, one to two minutes each. Swipe up for the next one.' },
@@ -14,6 +15,7 @@ const POINTS: { icon: IconName; title: string; text: string }[] = [
 ]
 
 export default function Landing() {
+  usePageTitle('Welcome')
   const { catalog } = useSession()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -42,7 +44,7 @@ export default function Landing() {
               navigate(`/signup?email=${encodeURIComponent(email)}`)
             }}
           >
-            <input id="landing-email" type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input id="landing-email" type="email" aria-label="Email address" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
             <button className="btn btn--accent btn--lg">Start watching</button>
           </form>
           {IS_DEMO && (

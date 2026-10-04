@@ -4,7 +4,8 @@ import { GENRES } from '../../shared/types'
 import { useSession } from '../state/Session'
 import SeriesCard from '../components/SeriesCard'
 import Icon from '../components/Icon'
-import { Spinner } from '../components/Feedback'
+import { ErrorState, Spinner } from '../components/Feedback'
+import { usePageTitle } from '../usePageTitle'
 
 type Sort = 'popular' | 'new' | 'az'
 const PAGE = 24
@@ -12,10 +13,11 @@ const PAGE = 24
 /** One place to search, filter by genre and sort the whole catalog. */
 export default function Browse() {
   const [params, setParams] = useSearchParams()
-  const { catalog } = useSession()
+  const { catalog, catalogError } = useSession()
   const [shown, setShown] = useState(PAGE)
   const q = params.get('q') ?? ''
   const genre = params.get('genre') ?? ''
+  usePageTitle(genre || 'Browse')
   const sort = (params.get('sort') as Sort) || 'popular'
 
   const update = (patch: Record<string, string>) => {
@@ -28,6 +30,7 @@ export default function Browse() {
     setShown(PAGE)
   }
 
+  if (catalogError && !catalog) return <ErrorState message={catalogError} onRetry={() => window.location.reload()} />
   if (!catalog) return <Spinner fullscreen />
 
   const needle = q.trim().toLowerCase()

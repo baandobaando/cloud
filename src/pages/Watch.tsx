@@ -7,6 +7,7 @@ import Poster from '../components/Poster'
 import Icon from '../components/Icon'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { useVideoSource } from '../useVideoSource'
+import { usePageTitle } from '../usePageTitle'
 
 const SEEK_STEP = 10
 const CONTROLS_HIDE_MS = 3000
@@ -16,6 +17,7 @@ const NEXT_COUNTDOWN = 5
 export default function Watch() {
   const { seriesId = '', episode = '1' } = useParams()
   const { data: series, error, reload } = useApi<Series>(`/series/${encodeURIComponent(seriesId)}`)
+  usePageTitle(series?.id === seriesId ? `${series.title} · Episode ${episode}` : null)
   if (error) return <NotFound message={error} onRetry={reload} />
   if (!series || series.id !== seriesId) return <div className="watch"><Spinner fullscreen /></div>
   if (series.episodes.length === 0) return <NotFound message="This series has no episodes yet." />

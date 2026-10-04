@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Me, Profile, ProfileState, SeriesSummary } from '../../shared/types'
-import { api } from '../api'
+import { ApiError, api } from '../api'
 
 const ACTIVE_PROFILE_KEY = 'reelflix:profile'
 
@@ -25,6 +25,8 @@ function storeProfile(id: number | null) {
 interface SessionValue {
   /** undefined while loading, null when signed out. */
   me: Me | null | undefined
+  /** Set when the session couldn't be checked (network/server error), as opposed to being signed out. */
+  meError: string | null
   refreshMe: () => Promise<Me | null>
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, name: string) => Promise<void>
@@ -48,6 +50,7 @@ const EMPTY_STATE: ProfileState = { myList: [], progress: {} }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null | undefined>(undefined)
+  const [meError, setMeError] = useState<string | null>(null)
   const [profileId, setProfileId] = useState<number | null>(readStoredProfile)
   const [catalog, setCatalog] = useState<SeriesSummary[] | undefined>(undefined)
   const [catalogError, setCatalogError] = useState<string | null>(null)
@@ -57,9 +60,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       const next = await api.get<Me | null>('/me')
       setMe(next)
+      setMeError(null)
       return next
-    } catch {
-      setMe(null)
+    } catch (err) {
+      // A 401 means signed out; anything else (offline, server down) shouldn't silently sign the viewer out.
+      if (err instanceof ApiError && err.status === 401) {
+        setMe(null)
+      } else {
+        setMeError(err instanceof Error ? err.message : 'Could not reach BingeTube')
+      }
       return null
     }
   }, [])
@@ -163,6 +172,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionValue>(
     () => ({
       me,
+      meError,
       refreshMe,
       login,
       signup,
@@ -176,7 +186,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       progress: profileState.progress,
       saveProgress,
     }),
-    [me, refreshMe, login, signup, logout, activeProfile, selectProfile, catalog, catalogError, profileState, toggleMyList, saveProgress],
+    [me, meError, refreshMe, login, signup, logout, activeProfile, selectProfile, catalog, catalogError, profileState, toggleMyList, saveProgress],
   )
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

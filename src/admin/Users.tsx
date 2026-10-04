@@ -10,6 +10,7 @@ import { useToast } from '../components/Toast'
 import { useDialog } from '../components/Dialog'
 import { timeAgo } from './BunnyImport'
 import { Drawer, Kpi, Pager, date, dateTime, money, useDebounced } from './ui'
+import { usePageTitle } from '../usePageTitle'
 
 const FILTERS: { id: AdminUserFilter; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -30,6 +31,7 @@ export function membership(u: AdminUserRow): { text: string; cls: string; detail
 }
 
 export default function Users() {
+  usePageTitle('Admin · Users')
   const [params, setParams] = useSearchParams()
   const [q, setQ] = useState(params.get('q') ?? '')
   const search = useDebounced(q)

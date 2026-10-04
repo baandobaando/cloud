@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useSession } from '../state/Session'
 import SeriesCard from '../components/SeriesCard'
-import { Spinner } from '../components/Feedback'
+import { ErrorState, Spinner } from '../components/Feedback'
+import { usePageTitle } from '../usePageTitle'
 
 export default function MyList() {
-  const { myList, catalog } = useSession()
+  usePageTitle('My List')
+  const { myList, catalog, catalogError } = useSession()
+  if (catalogError && !catalog) return <ErrorState message={catalogError} onRetry={() => window.location.reload()} />
   if (!catalog) return <Spinner fullscreen />
   const items = myList.map((id) => catalog.find((s) => s.id === id)).filter((s) => s !== undefined)
 

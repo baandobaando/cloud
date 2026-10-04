@@ -4,6 +4,7 @@ import Icon from '../components/Icon'
 import { useApi } from '../useApi'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { timeAgo } from './BunnyImport'
+import { usePageTitle } from '../usePageTitle'
 
 /** Where an activity row points: a user, an order or a series. */
 function targetLink(target: string): { to: string; label: string } | null {
@@ -14,6 +15,7 @@ function targetLink(target: string): { to: string; label: string } | null {
 }
 
 export default function Activity() {
+  usePageTitle('Admin · Activity')
   const { data, error, loading, reload } = useApi<AdminActivity[]>('/admin/activity?limit=200')
   if (error && !data) return <ErrorState message={error} onRetry={reload} />
   if (!data) return <Spinner />

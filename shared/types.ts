@@ -136,6 +136,8 @@ export interface Me {
   subscription: SubscriptionView | null
   isEntitled: boolean
   profiles: Profile[]
+  /** False for accounts created with Google/Apple that never set a password. */
+  hasPassword?: boolean
 }
 
 export interface WatchProgress {

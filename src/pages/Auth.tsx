@@ -4,6 +4,7 @@ import { IS_DEMO, api, errorMessage } from '../api'
 import { DemoAdminHint } from '../demo/DemoHints'
 import Logo from '../components/Logo'
 import { useSession } from '../state/Session'
+import { usePageTitle } from '../usePageTitle'
 
 /** Only allow redirecting to paths on this site. */
 export function safeNext(next: string | null): string {
@@ -101,6 +102,7 @@ function SocialButtons({ next }: { next: string }) {
 }
 
 export function Login() {
+  usePageTitle('Sign in')
   const { login } = useSession()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -128,11 +130,11 @@ export function Login() {
       <SocialButtons next={next} />
       <form className="form" onSubmit={submit}>
         {error && <div className="form__error">{error}</div>}
-        <input type="email" autoComplete="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input type="email" autoComplete="email" aria-label="Email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <input
           type="password"
           autoComplete="current-password"
-          placeholder="Password"
+          aria-label="Password" placeholder="Password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -150,6 +152,7 @@ export function Login() {
 }
 
 export function Signup() {
+  usePageTitle('Create account')
   const { signup } = useSession()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -178,12 +181,12 @@ export function Signup() {
       <SocialButtons next={next} />
       <form className="form" onSubmit={submit}>
         {error && <div className="form__error">{error}</div>}
-        <input placeholder="Your name" autoComplete="name" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} />
-        <input type="email" autoComplete="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input aria-label="Your name" placeholder="Your name" autoComplete="name" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} />
+        <input type="email" autoComplete="email" aria-label="Email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <input
           type="password"
           autoComplete="new-password"
-          placeholder="Password (8+ characters)"
+          aria-label="Password" placeholder="Password (8+ characters)"
           required
           minLength={8}
           value={password}

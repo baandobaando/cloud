@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import type { SeriesDetail } from '../../shared/types'
+import { MEMBERSHIP, formatPrice, type SeriesDetail } from '../../shared/types'
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import Shelf from '../components/Shelf'
@@ -8,6 +8,7 @@ import SeriesCard from '../components/SeriesCard'
 import Icon from '../components/Icon'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { useRetryImage } from '../components/useRetryImage'
+import { usePageTitle } from '../usePageTitle'
 
 const RANGE = 24
 
@@ -15,6 +16,7 @@ export default function Title() {
   const { seriesId = '' } = useParams()
   const navigate = useNavigate()
   const { data: series, error, reload } = useApi<SeriesDetail>(`/series/${encodeURIComponent(seriesId)}`)
+  usePageTitle(series?.id === seriesId ? series.title : null)
   const { me, catalog, myList, toggleMyList, progress } = useSession()
   const [failed, setFailed] = useState(false)
 
@@ -96,10 +98,13 @@ export default function Title() {
                 <div className="unlock-card__text">
                   <strong>Unlock all {series.episodes.length} episodes</strong>
                   <span>
-                    {series.freeEpisodes > 0 ? `First ${series.freeEpisodes} are free. ` : ''}Every series included for $9.99 a month.
+                    {series.freeEpisodes > 0 ? `First ${series.freeEpisodes} are free. ` : ''}Every series included for {formatPrice(MEMBERSHIP.priceCents)} a month.
                   </span>
                 </div>
-                <Link to={me ? '/plans' : `/signup?next=/plans`} className="btn btn--accent btn--small">
+                <Link
+                  to={me ? `/plans?return=/title/${series.id}` : `/signup?next=${encodeURIComponent(`/plans?return=/title/${series.id}`)}`}
+                  className="btn btn--accent btn--small"
+                >
                   Join now
                 </Link>
               </div>

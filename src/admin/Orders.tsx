@@ -8,6 +8,7 @@ import { ErrorState, Spinner } from '../components/Feedback'
 import { useToast } from '../components/Toast'
 import { useDialog } from '../components/Dialog'
 import { Drawer, Kpi, Pager, dateTime, money, useDebounced } from './ui'
+import { usePageTitle } from '../usePageTitle'
 
 const STATUSES: { id: OrderStatus | ''; label: string }[] = [
   { id: '', label: 'All' },
@@ -37,6 +38,7 @@ function rangeStart(id: string): number {
 const PROVIDERS: Record<string, string> = { nowpayments: 'NOWPayments', btcpay: 'BTCPay', test: 'Test' }
 
 export default function Orders() {
+  usePageTitle('Admin · Orders')
   const [params, setParams] = useSearchParams()
   const [q, setQ] = useState(params.get('q') ?? '')
   const search = useDebounced(q)
@@ -181,6 +183,7 @@ function OrderDrawer({ order: o, onClose, onChanged }: { order: AdminOrder; onCl
       title: `Mark order as paid?`,
       message: `This unlocks ${o.months} month${o.months > 1 ? 's' : ''} for ${o.email} straight away. Add a short note for the records (for example "paid by bank transfer").`,
       placeholder: 'Note (optional)',
+      optional: true,
       confirmLabel: 'Mark paid',
     })
     if (note === null) return
