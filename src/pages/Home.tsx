@@ -7,6 +7,7 @@ import SeriesCard from '../components/SeriesCard'
 import GenreTiles from '../components/GenreTiles'
 import { ErrorState, Spinner } from '../components/Feedback'
 import RenewalBanner from '../components/RenewalBanner'
+import PromoBanner from '../components/PromoBanner'
 import { usePageTitle } from '../usePageTitle'
 
 const SHELF_SIZE = 12
@@ -48,6 +49,7 @@ export default function Home() {
             <SeriesCard key={s.id} series={s} rank={i + 1} />
           ))}
         </Shelf>
+        <PromoBanner catalog={popular} />
         <Shelf title="New releases" subtitle="Fresh series added this week" seeAll="/browse?sort=new">
           {newest.map((s) => (
             <SeriesCard key={s.id} series={s} fresh />
