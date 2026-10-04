@@ -26,13 +26,12 @@ export default function Home() {
     .filter((s) => s !== undefined)
   const ranked = catalog.filter((s) => s.trendingRank).sort((a, b) => a.trendingRank! - b.trendingRank!)
   const popular = ranked.length ? ranked : [...catalog].sort((a, b) => b.episodeCount - a.episodeCount)
-  const featured = popular[0]
   const newest = catalog.slice(0, SHELF_SIZE) // the catalog arrives newest first
   const saved = myList.map((id) => byId.get(id)).filter((s) => s !== undefined)
 
   return (
     <main className="page page--home">
-      <Hero series={featured} />
+      <Hero items={popular.slice(0, 5)} />
       <div className="container sections">
         <RenewalBanner />
         {continueWatching.length > 0 && (
@@ -42,14 +41,14 @@ export default function Home() {
             ))}
           </Shelf>
         )}
-        <Shelf title={ranked.length ? 'Top 10 today' : 'Popular right now'} subtitle="What everyone is binging" seeAll="/browse?sort=popular">
+        <Shelf variant="ranked" title="Top 10 today" subtitle="What everyone is binging" seeAll="/browse?sort=popular">
           {popular.slice(0, 10).map((s, i) => (
-            <SeriesCard key={s.id} series={s} rank={ranked.length ? i + 1 : undefined} />
+            <SeriesCard key={s.id} series={s} rank={i + 1} />
           ))}
         </Shelf>
         <Shelf title="New releases" subtitle="Fresh series added this week" seeAll="/browse?sort=new">
           {newest.map((s) => (
-            <SeriesCard key={s.id} series={s} />
+            <SeriesCard key={s.id} series={s} fresh />
           ))}
         </Shelf>
         {saved.length > 0 && (

@@ -7,10 +7,11 @@ interface Props {
   subtitle?: string
   seeAll?: string
   children: ReactNode
+  variant?: 'ranked'
 }
 
 /** A titled section with a single horizontally scrolling line of cards. */
-export default function Shelf({ title, subtitle, seeAll, children }: Props) {
+export default function Shelf({ title, subtitle, seeAll, children, variant }: Props) {
   const scroller = useRef<HTMLDivElement>(null)
   const scrollBy = (dir: 1 | -1) => {
     const el = scroller.current
@@ -37,7 +38,7 @@ export default function Shelf({ title, subtitle, seeAll, children }: Props) {
           </button>
         </div>
       </header>
-      <div className="shelf__track" ref={scroller}>
+      <div className={`shelf__track ${variant ? `shelf__track--${variant}` : ''}`} ref={scroller}>
         {children}
       </div>
     </section>

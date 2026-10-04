@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { SeriesDetail } from '../../shared/types'
 import { useSession } from '../state/Session'
@@ -39,7 +39,10 @@ export default function Title() {
   const image = series.posterUrl && !failed ? series.posterUrl : null
 
   return (
-    <main className="page page--detail">
+    <main className="page page--detail" style={{ '--hero-a': series.palette[0], '--hero-b': series.palette[1] } as CSSProperties}>
+      <div className="detail-wash" aria-hidden>
+        {image && <div style={{ backgroundImage: `url("${image}")` }} />}
+      </div>
       <div className="container">
         <div className="detail">
           <div className="detail__cover">

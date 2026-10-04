@@ -1,43 +1,94 @@
-import { useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { SeriesSummary } from '../../shared/types'
 import { useSession } from '../state/Session'
 import Icon from './Icon'
+import { useRetryImage } from './useRetryImage'
 
-/** Featured series: copy on the left, the tall vertical cover on the right (the format these shows are made in). */
-export default function Hero({ series }: { series: SeriesSummary }) {
+const ROTATE_MS = 9000
+
+/** Featured carousel of the top series (items arrive in rank order): a color wash taken from the cover, copy on the left, the tall cover on the right. */
+export default function Hero({ items }: { items: SeriesSummary[] }) {
   const { me, myList, toggleMyList, progress } = useSession()
   const navigate = useNavigate()
-  const [failed, setFailed] = useState(false)
+  const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const series = items[index % items.length]
+  const { url: image, key: imgKey, onError } = useRetryImage(series?.posterUrl ?? null)
+
+  useEffect(() => {
+    if (paused || items.length < 2) return
+    const t = window.setTimeout(() => setIndex((i) => (i + 1) % items.length), ROTATE_MS)
+    return () => window.clearTimeout(t)
+  }, [index, paused, items.length])
+
+  if (!series) return null
   const inList = myList.includes(series.id)
   const resumeEp = progress[series.id]?.episodeNumber ?? 1
-  const image = series.posterUrl && !failed ? series.posterUrl : null
+  const [c1, c2] = series.palette
 
   return (
-    <section className="feature-hero">
-      {image && <div className="feature-hero__ambient" style={{ backgroundImage: `url("${image}")` }} aria-hidden />}
+    <section
+      className="feature-hero"
+      style={{ '--hero-a': c1, '--hero-b': c2 } as CSSProperties}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div className="feature-hero__wash" aria-hidden />
+      {image && <div key={series.id} className="feature-hero__ambient" style={{ backgroundImage: `url("${image}")` }} aria-hidden />}
       <div className="feature-hero__inner">
-        <div className="feature-hero__copy">
-          <span className="eyebrow">Featured series</span>
+        <div className="feature-hero__copy" key={series.id}>
+          <span className="hero-badge">
+            <b>TOP 10</b> #{index % items.length + 1} today
+          </span>
           <h1 className="feature-hero__title">{series.title}</h1>
           <p className="feature-hero__meta">
-            {series.genres.join(' · ')} <span aria-hidden>·</span> {series.episodeCount} episodes{' '}
-            <span aria-hidden>·</span> First {series.freeEpisodes} free
+            <span className="pill">{series.rating}</span>
+            {series.genres.join(' · ')} <span aria-hidden>·</span> {series.episodeCount} episodes
+            <span className="feature-hero__free">First {series.freeEpisodes} free</span>
           </p>
           {(series.tagline || series.synopsis) && <p className="feature-hero__text">{series.tagline || series.synopsis}</p>}
           <div className="actions">
             <Link to={`/watch/${series.id}/${resumeEp}`} className="btn btn--primary btn--lg">
               <Icon name="play" size={18} />
-              {resumeEp > 1 ? `Resume episode ${resumeEp}` : 'Watch episode 1'}
+              {resumeEp > 1 ? `Resume episode ${resumeEp}` : 'Play'}
             </Link>
-            <button className="btn btn--glass btn--lg" onClick={() => (me ? toggleMyList(series.id) : navigate('/signup'))}>
-              <Icon name={inList ? 'check' : 'plus'} size={18} />
-              {inList ? 'In My List' : 'My List'}
+            <Link to={`/title/${series.id}`} className="btn btn--glass btn--lg">
+              <Icon name="info" size={18} />
+              More info
+            </Link>
+            <button
+              className="icon-btn icon-btn--ring"
+              onClick={() => (me ? toggleMyList(series.id) : navigate('/signup'))}
+              aria-label={inList ? 'Remove from My List' : 'Add to My List'}
+              title={inList ? 'In My List' : 'My List'}
+            >
+              <Icon name={inList ? 'check' : 'plus'} size={20} />
             </button>
           </div>
+          {items.length > 1 && (
+            <div className="hero-dots" role="tablist" aria-label="Featured series">
+              {items.map((s, i) => (
+                <button
+                  key={s.id}
+                  role="tab"
+                  aria-selected={i === index}
+                  aria-label={s.title}
+                  className={`hero-dot ${i === index ? 'hero-dot--on' : ''} ${paused ? 'hero-dot--paused' : ''}`}
+                  onClick={() => setIndex(i)}
+                >
+                  <span style={{ animationDuration: `${ROTATE_MS}ms` }} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <Link to={`/title/${series.id}`} className="feature-hero__cover" aria-label={`More about ${series.title}`}>
-          {image ? <img src={image} alt="" onError={() => setFailed(true)} /> : <span className="scard__fallback">{series.title}</span>}
+        <Link to={`/title/${series.id}`} className="feature-hero__cover" key={`c-${series.id}`} aria-label={`More about ${series.title}`}>
+          {image ? (
+            <img key={imgKey} src={image} alt="" onError={onError} />
+          ) : (
+            <span className="scard__fallback">{series.title}</span>
+          )}
         </Link>
       </div>
     </section>
