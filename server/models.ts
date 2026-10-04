@@ -29,6 +29,7 @@ export interface SeriesRow {
   created_at: number
   updated_at: number
   episode_count: number
+  bunny_collection_id?: string | null
 }
 
 export interface EpisodeRow {

@@ -11,6 +11,7 @@ interface Status {
   videos?: number
   storageGb?: number
   linkedSeries?: number
+  hiddenSeries?: number
 }
 
 interface ImportResult {
@@ -64,6 +65,21 @@ export default function BunnyImport({ onImported }: { onImported: () => void }) 
     }
   }
 
+  const restore = async () => {
+    setBusy(true)
+    try {
+      const r = await api.post<ImportResult>('/admin/bunny/restore')
+      setResult(r)
+      toast(`Restored deleted series · ${r.episodes.toLocaleString()} episodes synced`, 'success')
+      onImported()
+      reload()
+    } catch (err) {
+      toast(errorMessage(err), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const attention = result?.report.filter((r) => r.action === 'skipped' || r.missing.length > 0 || r.pending > 0) ?? []
 
   return (
@@ -74,6 +90,7 @@ export default function BunnyImport({ onImported }: { onImported: () => void }) 
           <p className="muted small">
             {status.collections} collections · {status.videos?.toLocaleString()} videos · {status.storageGb} GB ·{' '}
             {status.linkedSeries} linked to series
+            {!!status.hiddenSeries && ` · ${status.hiddenSeries} deleted from the site`}
           </p>
         </div>
         <div className="admin__actions">
@@ -81,14 +98,19 @@ export default function BunnyImport({ onImported }: { onImported: () => void }) 
             <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} />
             Publish new series right away
           </label>
+          {!!status.hiddenSeries && (
+            <button className="btn btn--secondary btn--small" disabled={busy} onClick={restore}>
+              Restore {status.hiddenSeries} deleted
+            </button>
+          )}
           <button className="btn btn--accent btn--small" disabled={busy} onClick={run}>
             <Icon name="refresh" size={16} /> {busy ? 'Importing… this can take a minute' : 'Import from Bunny'}
           </button>
         </div>
       </div>
       <p className="muted small">
-        Each collection becomes a series and each finished video an episode, ordered by the number in its title. Run it
-        again any time to pick up newly finished uploads. Episode lists of imported series are managed by Bunny.
+        The site syncs with Bunny automatically every 30 minutes; use the button to sync right now. Each collection becomes a
+        series and each finished video an episode, ordered by the number in its title.
       </p>
       {result && (
         <div className="bunny__result">

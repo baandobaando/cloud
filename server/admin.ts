@@ -225,13 +225,44 @@ adminRouter.patch('/series/:id', (req, res) => {
   res.json(seriesDetail(id))
 })
 
-adminRouter.delete('/series/:id', (req, res) => {
-  const row = seriesRow(req.params.id as string)
+/**
+ * Removes a series from the site. Uploaded files are deleted; Bunny videos stay in Bunny,
+ * and the collection is remembered so the automatic sync doesn't bring the series back.
+ */
+function deleteSeries(row: SeriesRow) {
   const videos = db.prepare('SELECT video_url FROM episodes WHERE series_id = ?').all(row.id) as { video_url: string | null }[]
-  db.prepare('DELETE FROM series WHERE id = ?').run(row.id)
+  transaction(() => {
+    if (row.bunny_collection_id) {
+      db.prepare('INSERT OR REPLACE INTO bunny_hidden (collection_id, title, hidden_at) VALUES (?, ?, ?)').run(
+        row.bunny_collection_id,
+        row.title,
+        Date.now(),
+      )
+    }
+    db.prepare('DELETE FROM series WHERE id = ?').run(row.id)
+  })
   videos.forEach((v) => removeLocalMedia(v.video_url))
   removeLocalMedia(row.poster_url)
+}
+
+adminRouter.delete('/series/:id', (req, res) => {
+  deleteSeries(seriesRow(req.params.id as string))
   res.json({ ok: true })
+})
+
+adminRouter.post('/series/bulk-delete', (req, res) => {
+  const ids = req.body?.ids
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 500 || !ids.every((id) => typeof id === 'string')) {
+    throw new HttpError(400, 'Choose at least one series')
+  }
+  let deleted = 0
+  for (const id of ids as string[]) {
+    const row = db.prepare(`${SERIES_SELECT} WHERE s.id = ?`).get(id) as SeriesRow | undefined
+    if (!row) continue
+    deleteSeries(row)
+    deleted++
+  }
+  res.json({ deleted })
 })
 
 adminRouter.post('/series/:id/poster', posterUpload, (req, res) => {
@@ -445,7 +476,15 @@ adminRouter.get('/bunny/status', async (_req, res) => {
     videos: collections.reduce((n, c) => n + c.videoCount, 0),
     storageGb: Math.round(collections.reduce((n, c) => n + (c.totalSize ?? 0), 0) / 1e9),
     linkedSeries: linked,
+    hiddenSeries: (db.prepare('SELECT COUNT(*) AS n FROM bunny_hidden').get() as { n: number }).n,
   })
+})
+
+/** Brings back every series that was deleted from the site, then re-imports. */
+adminRouter.post('/bunny/restore', async (_req, res) => {
+  if (!bunnyConfigured()) throw new HttpError(400, 'Bunny Stream is not configured on the server')
+  db.prepare('DELETE FROM bunny_hidden').run()
+  res.json(await runBunnyImport({ publishNew: true }))
 })
 
 adminRouter.post('/bunny/import', async (req, res) => {

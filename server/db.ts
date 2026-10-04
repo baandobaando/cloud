@@ -132,6 +132,8 @@ function ensureColumn(table: string, column: string, definition: string) {
 // Series imported from Bunny Stream remember their collection so re-imports update them.
 ensureColumn('series', 'bunny_collection_id', 'TEXT')
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_series_bunny ON series(bunny_collection_id) WHERE bunny_collection_id IS NOT NULL')
+// Bunny collections an admin deleted from the site; the sync skips them until restored.
+db.exec('CREATE TABLE IF NOT EXISTS bunny_hidden (collection_id TEXT PRIMARY KEY, title TEXT NOT NULL, hidden_at INTEGER NOT NULL)')
 
 /** Runs fn inside a transaction, rolling back on error. */
 export function transaction<T>(fn: () => T): T {

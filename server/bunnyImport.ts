@@ -42,8 +42,18 @@ export async function runBunnyImport({ publishNew }: { publishNew: boolean }): P
   const collections = await listCollections()
   const report: ImportReportRow[] = []
 
-  for (const col of collections) {
-    const videos = await listVideos(col.guid)
+  const hidden = new Set((db.prepare('SELECT collection_id FROM bunny_hidden').all() as { collection_id: string }[]).map((r) => r.collection_id))
+  const wanted = collections.filter((c) => !hidden.has(c.guid))
+  // Fetch episode lists six collections at a time; large libraries otherwise take minutes.
+  const videosByCollection = new Map<string, Awaited<ReturnType<typeof listVideos>>>()
+  const queue = [...wanted]
+  await Promise.all(
+    Array.from({ length: 6 }, async () => {
+      for (let c = queue.shift(); c; c = queue.shift()) videosByCollection.set(c.guid, await listVideos(c.guid))
+    }),
+  )
+  for (const col of wanted) {
+    const videos = videosByCollection.get(col.guid) ?? []
     const plan = planEpisodes(videos)
     const title = cleanTitle(col.name)
     const existing = db.prepare('SELECT id FROM series WHERE bunny_collection_id = ?').get(col.guid) as { id: string } | undefined

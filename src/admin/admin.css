@@ -448,3 +448,25 @@ textarea.input {
   overflow-y: auto;
   font-size: 0.88rem;
 }
+
+.table__check {
+  width: 32px;
+}
+
+.table__check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--text);
+  cursor: pointer;
+}
+
+.table tr.is-selected td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.toolbar__selection {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}

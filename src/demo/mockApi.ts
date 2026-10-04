@@ -587,6 +587,13 @@ on('DELETE', '/admin/series/:id', (db, m) => {
   db.series = db.series.filter((x) => x !== s)
   return { ok: true }
 })
+on('POST', '/admin/series/bulk-delete', (db, _m, b) => {
+  requireAdmin(db)
+  const ids = new Set(Array.isArray(b.ids) ? (b.ids as string[]) : [])
+  const before = db.series.length
+  db.series = db.series.filter((s) => !ids.has(s.id))
+  return { deleted: before - db.series.length }
+})
 on('DELETE', '/admin/series/:id/poster', (db, m) => {
   requireAdmin(db)
   const s = findSeries(db, decodeURIComponent(m[1]))
