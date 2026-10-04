@@ -16,6 +16,7 @@ import Account from './pages/Account'
 import { OrderStatusPage, TestCheckout } from './pages/Billing'
 import { Privacy, Terms } from './pages/Legal'
 import NotFound from './pages/NotFound'
+import { usePageViews } from './usePageViews'
 
 // The admin panel is only downloaded by admins.
 const Admin = lazy(() => import('./admin/Admin'))
@@ -23,6 +24,7 @@ const Admin = lazy(() => import('./admin/Admin'))
 export default function App() {
   const { me, meError, refreshMe } = useSession()
   const location = useLocation()
+  usePageViews()
 
   if (me === undefined && meError) return <ErrorState message="Couldn't reach BingeTube. Check your connection and try again." onRetry={() => refreshMe()} />
   if (me === undefined) return <Spinner fullscreen />

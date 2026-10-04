@@ -26,6 +26,9 @@ If you have questions, contact us at ${contact}.</p>
   card number or bank details.</li>
   <li><strong>Technical information.</strong> Essential cookies that keep you signed in, and server logs such as IP address, browser type
   and request times, used for security and troubleshooting.</li>
+  <li><strong>Visit statistics.</strong> We count page visits to understand how the site is used: the page, the site that linked to us,
+  your country and device type. We do this without cookies or third-party analytics; your IP address and browser are combined into an
+  anonymous code that changes every day and can't be traced back to you.</li>
 </ul>
 
 <h2>2. How we use information</h2>

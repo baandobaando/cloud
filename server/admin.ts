@@ -1,4 +1,5 @@
 import { buildAnalytics } from './analytics.ts'
+import { buildTraffic } from './traffic.ts'
 import { logAdmin, registerPeopleRoutes } from './adminPeople.ts'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -229,6 +230,10 @@ adminRouter.get('/payments/status', async (req, res) => {
     },
   }
   res.json(body)
+})
+
+adminRouter.get('/traffic', (req, res) => {
+  res.json(buildTraffic(String(req.query.range ?? '30d')))
 })
 
 adminRouter.get('/analytics', (req, res) => {

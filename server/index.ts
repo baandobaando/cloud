@@ -4,6 +4,7 @@ import express from 'express'
 import { accountRouter, buildMe } from './account.ts'
 import { adminRouter } from './admin.ts'
 import { oauthRouter } from './oauth.ts'
+import { pruneTraffic, trafficRouter } from './traffic.ts'
 import { authRouter, ensureAdmin, loadUser, pruneExpiredSessions, sameOrigin } from './auth.ts'
 import { billingRouter } from './billing.ts'
 import { startBunnyAutoImport } from './bunnyImport.ts'
@@ -43,6 +44,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/auth', oauthRouter)
 app.use('/api', accountRouter)
 app.use('/api', catalogRouter)
+app.use('/api', trafficRouter)
 app.use('/api/billing', billingRouter)
 app.use('/api/admin', adminRouter)
 app.use('/media', mediaRouter)
@@ -95,6 +97,8 @@ app.use(errorHandler)
 await ensureAdmin()
 pruneExpiredSessions()
 setInterval(pruneExpiredSessions, 6 * 60 * 60 * 1000).unref()
+pruneTraffic()
+setInterval(pruneTraffic, 24 * 60 * 60 * 1000).unref()
 
 app.listen(config.port, () => {
   console.log(`[server] BingeTube API listening on http://localhost:${config.port}`)

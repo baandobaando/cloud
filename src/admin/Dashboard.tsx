@@ -7,7 +7,7 @@ import { ErrorState, Spinner } from '../components/Feedback'
 import { BarList, Delta, SERIES, Sparkline, TimeChart } from './charts'
 import { usePageTitle } from '../usePageTitle'
 
-const RANGE_KEY = 'bingetube:admin-range'
+export const RANGE_KEY = 'bingetube:admin-range'
 
 const money = (cents: number) =>
   (cents / 100).toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: cents >= 100_000 ? 0 : 2 })
@@ -18,7 +18,7 @@ const moneyShort = (cents: number) => {
 const num = (v: number) => Math.round(v).toLocaleString()
 const numShort = (v: number) => (v >= 10_000 ? `${(v / 1000).toFixed(0)}k` : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`)
 
-function savedRange(): AnalyticsRange {
+export function savedRange(): AnalyticsRange {
   try {
     const v = localStorage.getItem(RANGE_KEY)
     if (ANALYTICS_RANGES.some((r) => r.id === v)) return v as AnalyticsRange
@@ -254,7 +254,7 @@ function daysLeft(t: number) {
   return d <= 1 ? 'today' : `in ${d} days`
 }
 
-function Kpi({ label, metric, format, accent }: { label: string; metric: Metric; format: (v: number) => string; accent?: boolean }) {
+export function Kpi({ label, metric, format, accent }: { label: string; metric: Metric; format: (v: number) => string; accent?: boolean }) {
   return (
     <div className={`kpi ${accent ? 'kpi--accent' : ''}`}>
       <div className="kpi__label">{label}</div>
@@ -268,7 +268,7 @@ function Kpi({ label, metric, format, accent }: { label: string; metric: Metric;
   )
 }
 
-function PanelHead({ title, sub, value, delta }: { title: string; sub?: string; value?: string; delta?: ReactNode }) {
+export function PanelHead({ title, sub, value, delta }: { title: string; sub?: string; value?: string; delta?: ReactNode }) {
   return (
     <header className="panel__head">
       <div>

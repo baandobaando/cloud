@@ -363,3 +363,35 @@ export interface AdminPaymentsStatus {
     webhookUrl: string
   }
 }
+
+export interface TrafficRow {
+  label: string
+  views: number
+  visitors: number
+  /** Series id, for top series rows. */
+  id?: string
+}
+
+export interface AdminTraffic {
+  range: AnalyticsRange
+  buckets: number[]
+  bucketMs: number
+  kpis: {
+    visitors: Metric
+    pageviews: Metric
+    viewsPerVisitor: { value: number; previous: number }
+    signups: { value: number; previous: number }
+    /** Sign-ups ÷ visitors, as a percentage. */
+    signupRate: { value: number; previous: number }
+    /** Subscriptions started (including free trials). */
+    subscribed: { value: number; previous: number }
+  }
+  /** Distinct visitors in the last 5 minutes. */
+  liveNow: number
+  topPages: TrafficRow[]
+  topSeries: TrafficRow[]
+  referrers: TrafficRow[]
+  countries: TrafficRow[]
+  devices: TrafficRow[]
+  signedIn: { value: number }
+}

@@ -1,6 +1,7 @@
 import { NavLink, Navigate, Route, Routes, Link } from 'react-router-dom'
 import { useSession } from '../state/Session'
 import Dashboard from './Dashboard'
+import Traffic from './Traffic'
 import SeriesList from './SeriesList'
 import SeriesEditor from './SeriesEditor'
 import Users from './Users'
@@ -24,6 +25,7 @@ export default function Admin() {
         </Link>
         <nav>
           <NavLink to="/admin" end><Icon name="chart" size={18} /> Dashboard</NavLink>
+          <NavLink to="/admin/traffic"><Icon name="eye" size={18} /> Traffic</NavLink>
           <NavLink to="/admin/series"><Icon name="film" size={18} /> Series</NavLink>
           <NavLink to="/admin/orders"><Icon name="coins" size={18} /> Orders</NavLink>
           <NavLink to="/admin/users"><Icon name="users" size={18} /> Users</NavLink>
@@ -37,6 +39,7 @@ export default function Admin() {
       <main className="admin__main">
         <Routes>
           <Route index element={<Dashboard />} />
+          <Route path="traffic" element={<Traffic />} />
           <Route path="series" element={<SeriesList />} />
           <Route path="series/new" element={<SeriesEditor />} />
           <Route path="series/:seriesId" element={<SeriesEditor />} />
