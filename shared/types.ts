@@ -159,6 +159,11 @@ export interface AdminSeries extends SeriesSummary {
   published: boolean
   createdAt: number
   updatedAt: number
+  /** Extras on the admin list (absent in the offline demo). */
+  runtimeSec?: number
+  views30d?: number
+  viewers30d?: number
+  source?: 'bunny' | 'manual'
 }
 
 export interface AdminEpisode {

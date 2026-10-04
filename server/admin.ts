@@ -20,7 +20,7 @@ import {
 import { requireAdmin } from './auth.ts'
 import { config } from './config.ts'
 import { BUNNY_PREFIX, bunnyConfigured, listCollections } from './bunny.ts'
-import { runBunnyImport } from './bunnyImport.ts'
+import { getLastSync, importBunnyNow } from './bunnyImport.ts'
 import { fulfillOrder } from './billing.ts'
 import { mediaDirs } from './catalog.ts'
 import { db, transaction } from './db.ts'
@@ -199,7 +199,28 @@ adminRouter.get('/analytics', (req, res) => {
 
 adminRouter.get('/series', (_req, res) => {
   const rows = db.prepare(`${SERIES_SELECT} ORDER BY s.updated_at DESC`).all() as unknown as SeriesRow[]
-  res.json(rows.map(toAdminSeries))
+  // Per-series extras for the admin list: total runtime and watch activity over the last 30 days.
+  const runtime = new Map(
+    (db.prepare('SELECT series_id AS id, COALESCE(SUM(duration_sec), 0) AS n FROM episodes GROUP BY series_id').all() as { id: string; n: number }[]).map(
+      (r) => [r.id, r.n],
+    ),
+  )
+  const views = new Map(
+    (
+      db
+        .prepare('SELECT series_id AS id, COUNT(*) AS views, COUNT(DISTINCT profile_id) AS viewers FROM episode_views WHERE created_at > ? GROUP BY series_id')
+        .all(Date.now() - 30 * DAY_MS) as { id: string; views: number; viewers: number }[]
+    ).map((r) => [r.id, r]),
+  )
+  res.json(
+    rows.map((r) => ({
+      ...toAdminSeries(r),
+      runtimeSec: runtime.get(r.id) ?? 0,
+      views30d: views.get(r.id)?.views ?? 0,
+      viewers30d: views.get(r.id)?.viewers ?? 0,
+      source: r.bunny_collection_id ? 'bunny' : 'manual',
+    })),
+  )
 })
 
 adminRouter.post('/series', (req, res) => {
@@ -485,6 +506,7 @@ adminRouter.get('/bunny/status', async (_req, res) => {
     hiddenSeries: (db.prepare('SELECT COUNT(*) AS n FROM bunny_hidden').get() as { n: number }).n,
     autoSync: process.env.BUNNY_AUTO_IMPORT !== 'off',
     syncMinutes: config.bunny.syncMinutes,
+    lastSync: getLastSync(),
   })
 })
 
@@ -492,10 +514,10 @@ adminRouter.get('/bunny/status', async (_req, res) => {
 adminRouter.post('/bunny/restore', async (_req, res) => {
   if (!bunnyConfigured()) throw new HttpError(400, 'Bunny Stream is not configured on the server')
   db.prepare('DELETE FROM bunny_hidden').run()
-  res.json(await runBunnyImport({ publishNew: true }))
+  res.json(await importBunnyNow(true))
 })
 
 adminRouter.post('/bunny/import', async (req, res) => {
   if (!bunnyConfigured()) throw new HttpError(400, 'Bunny Stream is not configured on the server')
-  res.json(await runBunnyImport({ publishNew: req.body?.publish === true }))
+  res.json(await importBunnyNow(req.body?.publish === true))
 })

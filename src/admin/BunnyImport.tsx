@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, errorMessage } from '../api'
-import { useApi } from '../useApi'
 import { useToast } from '../components/Toast'
 import Icon from '../components/Icon'
 
-interface Status {
+export interface BunnyStatus {
   configured: boolean
+  lastSync?: { at: number; ok: boolean; created: number; updated: number; episodes: number; pending: number; error?: string } | null
   collections?: number
   videos?: number
   storageGb?: number
@@ -33,10 +33,26 @@ interface ImportResult {
   }[]
 }
 
+export function timeAgo(t: number) {
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000))
+  if (s < 60) return 'just now'
+  const m = Math.round(s / 60)
+  if (m < 60) return `${m} min ago`
+  const h = Math.round(m / 60)
+  if (h < 48) return `${h} h ago`
+  return `${Math.round(h / 24)} days ago`
+}
+
+interface Props {
+  status: BunnyStatus | null
+  error: string | null
+  reload: () => void
+  onImported: () => void
+}
+
 /** Pulls every Bunny Stream collection into the catalog as a series. */
-export default function BunnyImport({ onImported }: { onImported: () => void }) {
+export default function BunnyImport({ status, error, reload, onImported }: Props) {
   const toast = useToast()
-  const { data: status, error, reload } = useApi<Status>('/admin/bunny/status')
   const [publish, setPublish] = useState(false)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
@@ -110,6 +126,14 @@ export default function BunnyImport({ onImported }: { onImported: () => void }) 
           </button>
         </div>
       </div>
+      {status.lastSync && (
+        <p className={`small bunny__last ${status.lastSync.ok ? '' : 'bunny__last--bad'}`}>
+          <span className="dot" /> Last sync {timeAgo(status.lastSync.at)}
+          {status.lastSync.ok
+            ? ` · ${status.lastSync.created} new, ${status.lastSync.updated} updated, ${status.lastSync.episodes.toLocaleString()} episodes${status.lastSync.pending ? `, ${status.lastSync.pending} still processing` : ''}`
+            : ` failed: ${status.lastSync.error}`}
+        </p>
+      )}
       <p className="muted small">
         {status.autoSync
           ? `The site syncs with Bunny automatically every ${status.syncMinutes} minute${status.syncMinutes === 1 ? '' : 's'}; use the button to sync right now.`

@@ -1,39 +1,38 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useSession } from "../state/Session";
-import Icon from "./Icon";
-import Logo from "./Logo";
+import { useEffect, useRef, useState } from 'react'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { useSession } from '../state/Session'
+import Icon from './Icon'
+import Logo from './Logo'
 
 export default function Navbar() {
-  const { me, activeProfile, selectProfile, logout } = useSession();
-  const navigate = useNavigate();
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const { me, activeProfile, selectProfile, logout } = useSession()
+  const navigate = useNavigate()
+  const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    const onScroll = () => setScrolled(window.scrollY > 40)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => {
-    if (!menuOpen) return;
-    const close = (e: MouseEvent) =>
-      !menuRef.current?.contains(e.target as Node) && setMenuOpen(false);
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [menuOpen]);
+    if (!menuOpen) return
+    const close = (e: MouseEvent) => !menuRef.current?.contains(e.target as Node) && setMenuOpen(false)
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [menuOpen])
 
   const go = (to: string) => {
-    setMenuOpen(false);
-    navigate(to);
-  };
+    setMenuOpen(false)
+    navigate(to)
+  }
 
   return (
     <>
-      <header className={`navbar ${scrolled ? "navbar--solid" : ""}`}>
+      <header className={`navbar ${scrolled ? 'navbar--solid' : ''}`}>
         <Logo />
         <nav className="navbar__links">
           <NavLink to="/" end>
@@ -43,11 +42,7 @@ export default function Navbar() {
           <NavLink to="/my-list">My List</NavLink>
         </nav>
         <div className="navbar__right">
-          <NavLink
-            to="/browse"
-            className="icon-btn icon-btn--ghost navbar__search"
-            aria-label="Search"
-          >
+          <NavLink to="/browse" className="icon-btn icon-btn--ghost navbar__search" aria-label="Search">
             <Icon name="search" />
           </NavLink>
           {!me && (
@@ -56,23 +51,22 @@ export default function Navbar() {
             </Link>
           )}
           {(!me || !me.isEntitled) && (
-            <Link
-              to={me ? "/plans" : "/signup?next=/plans"}
-              className="btn btn--small btn--accent"
-            >
-              <span>Join<span className="hide-phone"> for $9.99</span></span>
+            <Link to={me ? '/plans' : '/signup?next=/plans'} className="btn btn--small btn--accent">
+              <span>
+                Join<span className="hide-phone"> for $9.99</span>
+              </span>
             </Link>
           )}
           {me && (
             <div className="menu" ref={menuRef}>
               <button
                 className="avatar"
-                style={{ background: activeProfile?.color ?? "#3f3f46" }}
+                style={{ background: activeProfile?.color ?? '#3f3f46' }}
                 aria-label="Account menu"
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((o) => !o)}
               >
-                {(activeProfile?.name ?? me?.name ?? "?")[0]}
+                {(activeProfile?.name ?? me?.name ?? '?')[0]}
               </button>
               {menuOpen && (
                 <div className="menu__panel">
@@ -85,14 +79,11 @@ export default function Navbar() {
                           key={p.id}
                           className="menu__item"
                           onClick={() => {
-                            selectProfile(p.id);
-                            go("/");
+                            selectProfile(p.id)
+                            go('/')
                           }}
                         >
-                          <span
-                            className="menu__swatch"
-                            style={{ background: p.color }}
-                          >
+                          <span className="menu__swatch" style={{ background: p.color }}>
                             {p.name[0]}
                           </span>
                           {p.name}
@@ -101,17 +92,17 @@ export default function Navbar() {
                   <button
                     className="menu__item"
                     onClick={() => {
-                      selectProfile(null);
-                      setMenuOpen(false);
+                      selectProfile(null)
+                      setMenuOpen(false)
                     }}
                   >
                     <Icon name="users" size={18} /> Switch or manage profiles
                   </button>
-                  <button className="menu__item" onClick={() => go("/account")}>
+                  <button className="menu__item" onClick={() => go('/account')}>
                     <Icon name="user" size={18} /> Account &amp; membership
                   </button>
                   {me?.isAdmin && (
-                    <button className="menu__item" onClick={() => go("/admin")}>
+                    <button className="menu__item" onClick={() => go('/admin')}>
                       <Icon name="settings" size={18} /> Admin panel
                     </button>
                   )}
@@ -119,8 +110,8 @@ export default function Navbar() {
                   <button
                     className="menu__item"
                     onClick={() => {
-                      setMenuOpen(false);
-                      logout().then(() => navigate("/"));
+                      setMenuOpen(false)
+                      logout().then(() => navigate('/'))
                     }}
                   >
                     <Icon name="logout" size={18} /> Sign out
@@ -147,5 +138,5 @@ export default function Navbar() {
         </NavLink>
       </nav>
     </>
-  );
+  )
 }

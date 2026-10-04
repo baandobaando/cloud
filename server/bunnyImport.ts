@@ -114,13 +114,39 @@ export async function runBunnyImport({ publishNew }: { publishNew: boolean }): P
 
 let running: Promise<ImportResult> | null = null
 
+export interface SyncSummary {
+  at: number
+  ok: boolean
+  created: number
+  updated: number
+  episodes: number
+  pending: number
+  error?: string
+}
+let lastSync: SyncSummary | null = null
+/** When the last Bunny sync finished and what it found (shown on the admin Series page). */
+export const getLastSync = () => lastSync
+
 /** Runs one import at a time; overlapping calls share the in-flight run. */
 function importOnce(publishNew: boolean): Promise<ImportResult> {
-  running ??= runBunnyImport({ publishNew }).finally(() => {
-    running = null
-  })
+  running ??= runBunnyImport({ publishNew })
+    .then(
+      (r) => {
+        lastSync = { at: Date.now(), ok: true, created: r.created, updated: r.updated, episodes: r.episodes, pending: r.pending }
+        return r
+      },
+      (err: Error) => {
+        lastSync = { at: Date.now(), ok: false, created: 0, updated: 0, episodes: 0, pending: 0, error: err.message }
+        throw err
+      },
+    )
+    .finally(() => {
+      running = null
+    })
   return running
 }
+
+export const importBunnyNow = (publishNew = true) => importOnce(publishNew)
 
 /**
  * Keeps the catalog in sync with Bunny without anyone pressing a button:
