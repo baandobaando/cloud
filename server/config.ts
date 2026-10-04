@@ -39,6 +39,19 @@ export const config = {
     /** Minutes between automatic syncs with Bunny (minimum 1). */
     syncMinutes: Math.max(1, Number(env.BUNNY_SYNC_MINUTES) || 5),
   },
+  /** Sign in with Google: an OAuth client (Web application) from Google Cloud Console. */
+  google: {
+    clientId: env.GOOGLE_CLIENT_ID ?? '',
+    clientSecret: env.GOOGLE_CLIENT_SECRET ?? '',
+  },
+  /** Sign in with Apple: a Services ID plus a Sign in with Apple key (.p8) from developer.apple.com. */
+  apple: {
+    clientId: env.APPLE_CLIENT_ID ?? '',
+    teamId: env.APPLE_TEAM_ID ?? '',
+    keyId: env.APPLE_KEY_ID ?? '',
+    // Env vars usually carry the .p8 file on one line with literal \n.
+    privateKey: (env.APPLE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
+  },
   adminEmail: env.ADMIN_EMAIL ?? (isProduction ? '' : 'admin@bingetube.local'),
   adminPassword: env.ADMIN_PASSWORD ?? (isProduction ? '' : 'admin12345'),
   /** Test checkout (no real charge). Never available in production. */

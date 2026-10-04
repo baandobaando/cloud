@@ -3,6 +3,7 @@ import path from 'node:path'
 import express from 'express'
 import { accountRouter } from './account.ts'
 import { adminRouter } from './admin.ts'
+import { oauthRouter } from './oauth.ts'
 import { authRouter, ensureAdmin, loadUser, pruneExpiredSessions, sameOrigin } from './auth.ts'
 import { billingRouter } from './billing.ts'
 import { startBunnyAutoImport } from './bunnyImport.ts'
@@ -24,8 +25,10 @@ app.use((_req, res, next) => {
 // Webhooks need the exact raw bytes to verify signatures, so they skip the JSON parser.
 app.use('/api/billing/webhooks', express.raw({ type: '*/*', limit: '1mb' }))
 app.use(express.json({ limit: '1mb' }))
+// Sign in with Apple posts its callback as a form.
+app.use('/api/auth/oauth/apple/callback', express.urlencoded({ extended: false, limit: '64kb' }))
 app.use(loadUser)
-app.use('/api', (req, res, next) => (req.path.startsWith('/billing/webhooks') ? next() : sameOrigin(req, res, next)))
+app.use('/api', (req, res, next) => (req.path.startsWith('/billing/webhooks') || req.path === '/auth/oauth/apple/callback' ? next() : sameOrigin(req, res, next)))
 app.use('/api', (_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store')
   next()
@@ -35,6 +38,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 app.use('/api/auth', authRouter)
+app.use('/api/auth', oauthRouter)
 app.use('/api', accountRouter)
 app.use('/api', catalogRouter)
 app.use('/api/billing', billingRouter)

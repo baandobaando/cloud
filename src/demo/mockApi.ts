@@ -391,6 +391,8 @@ on('GET', '/me', (db) => {
   return u ? me(db, u) : null
 })
 
+on('GET', '/auth/providers', () => ({ google: false, apple: false }))
+
 on('POST', '/auth/signup', (db, _m, b) => {
   const email = str(b.email, 'Email', 3, 254).toLowerCase()
   const password = str(b.password, 'Password', 8, 200)

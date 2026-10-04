@@ -134,6 +134,15 @@ ensureColumn('series', 'bunny_collection_id', 'TEXT')
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_series_bunny ON series(bunny_collection_id) WHERE bunny_collection_id IS NOT NULL')
 // Bunny collections an admin deleted from the site; the sync skips them until restored.
 db.exec('CREATE TABLE IF NOT EXISTS bunny_hidden (collection_id TEXT PRIMARY KEY, title TEXT NOT NULL, hidden_at INTEGER NOT NULL)')
+// Google / Apple accounts linked to a user (subject = the provider's stable user id).
+db.exec(`CREATE TABLE IF NOT EXISTS user_identities (
+  provider TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (provider, subject)
+)`)
 
 /** Runs fn inside a transaction, rolling back on error. */
 export function transaction<T>(fn: () => T): T {

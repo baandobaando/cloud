@@ -42,7 +42,7 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
 
 const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex')
 
-function createSession(res: Response, userId: number) {
+export function createSession(res: Response, userId: number) {
   const token = crypto.randomBytes(32).toString('base64url')
   const now = Date.now()
   db.prepare('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)').run(
@@ -60,7 +60,7 @@ function createSession(res: Response, userId: number) {
   })
 }
 
-function readCookie(req: Request, name: string): string | undefined {
+export function readCookie(req: Request, name: string): string | undefined {
   const header = req.headers.cookie
   if (!header) return undefined
   for (const part of header.split(';')) {
@@ -112,7 +112,7 @@ export function sameOrigin(req: Request, _res: Response, next: NextFunction) {
   next()
 }
 
-function createUser(email: string, name: string, isAdmin: boolean, passwordHash: string) {
+export function createUser(email: string, name: string, isAdmin: boolean, passwordHash: string) {
   const now = Date.now()
   const { lastInsertRowid } = db
     .prepare('INSERT INTO users (email, password_hash, name, is_admin, created_at) VALUES (?, ?, ?, ?, ?)')
@@ -186,10 +186,12 @@ authRouter.post('/logout', (req, res) => {
 })
 
 authRouter.post('/password', requireUser, authLimiter, async (req, res) => {
-  const current = str(req.body?.currentPassword, 'Current password', { min: 1, max: 200 })
+  const current = typeof req.body?.currentPassword === 'string' ? req.body.currentPassword : ''
   const next = str(req.body?.newPassword, 'New password', { min: 8, max: 200 })
   const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.user!.id) as { password_hash: string }
-  if (!(await verifyPassword(current, row.password_hash))) throw new HttpError(400, 'Current password is incorrect')
+  // Accounts created with Google/Apple have no password yet and may set one without the current one.
+  const hasPassword = row.password_hash.startsWith('scrypt$')
+  if (hasPassword && !(await verifyPassword(current, row.password_hash))) throw new HttpError(400, 'Current password is incorrect')
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(await hashPassword(next), req.user!.id)
   // Sign out every other session.
   const token = readCookie(req, SESSION_COOKIE)
