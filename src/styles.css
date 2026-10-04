@@ -4772,3 +4772,116 @@ video.feature-hero__preview {
     right: -95px;
   }
 }
+
+/* ---------- Hero spacing: wider stage, title further left, bigger preview ---------- */
+
+.feature-hero__inner {
+  max-width: 1480px;
+  padding-inline: clamp(24px, 7vw, 130px);
+  gap: clamp(2rem, 8vw, 9rem);
+}
+
+.feature-hero__copy {
+  max-width: 600px;
+}
+
+.feature-hero__cover {
+  width: clamp(260px, 27vw, 400px);
+}
+
+@media (max-width: 860px) {
+  .feature-hero__cover {
+    width: min(56vw, 240px);
+  }
+}
+
+/* ---------- Inferno beams as living light: blobs of fire drifting up at different speeds ---------- */
+
+.feature-hero[data-glow='inferno'] .feature-hero__beams span {
+  box-shadow: none;
+  background:
+    radial-gradient(38% 16% at 50% 50%, rgba(255, 190, 110, 0.95), transparent 70%),
+    radial-gradient(46% 20% at 50% 50%, #ff2a4f, transparent 72%),
+    radial-gradient(52% 24% at 50% 50%, #ff0033, transparent 74%),
+    radial-gradient(44% 14% at 50% 50%, rgba(255, 110, 40, 0.9), transparent 70%),
+    linear-gradient(90deg, transparent, rgba(110, 0, 25, 0.55) 22%, rgba(190, 0, 40, 0.5) 50%, rgba(110, 0, 25, 0.55) 78%, transparent);
+  background-size:
+    100% 420px,
+    100% 560px,
+    100% 700px,
+    100% 300px,
+    100% 100%;
+  background-repeat: repeat-y;
+  filter: blur(34px) saturate(1.7);
+  opacity: 1;
+  animation:
+    fire-flow 12s linear infinite,
+    fire-breathe 5s ease-in-out infinite;
+}
+
+/* The rising-bands layer from before is replaced by the blobs. */
+.feature-hero[data-glow='inferno'] .feature-hero__beams span::after {
+  content: none;
+}
+
+/* Each layer travels a whole multiple of its own height, so the loop is seamless. */
+@keyframes fire-flow {
+  from {
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      0 -840px,
+      0 -560px,
+      0 -700px,
+      0 -900px,
+      0 0;
+  }
+}
+
+@keyframes fire-breathe {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scaleX(1.14);
+    opacity: 1;
+  }
+}
+
+/* A soft halo so the edges glow into the page instead of stopping. */
+.feature-hero[data-glow='inferno'] .feature-hero__beams {
+  background:
+    radial-gradient(18% 70% at 0% 50%, rgba(255, 0, 51, 0.28), transparent 70%),
+    radial-gradient(18% 70% at 100% 50%, rgba(255, 0, 51, 0.28), transparent 70%);
+}
+
+/* Big, but never taller than the screen. */
+.feature-hero__cover {
+  width: min(27vw, 390px, calc((100vh - var(--nav-h) - 150px) * 0.5625));
+  min-width: 240px;
+}
+
+@media (max-width: 860px) {
+  .feature-hero__cover {
+    width: min(56vw, 240px);
+    min-width: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .feature-hero__cover {
+    width: min(50vw, 200px);
+  }
+
+  .hero-arrow {
+    top: calc(var(--nav-h) + 1.5rem + min(50vw, 200px) * 0.89);
+  }
+}
