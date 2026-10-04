@@ -4989,28 +4989,33 @@ video.feature-hero__preview {
 }
 
 /* ---------- Promo banner (top of home, non-members) ---------- */
-/* Built at the proportions of the Facebook cover art (1640 x 412 after cropping), so every size is in container
-   units: 1cqw = 1% of the banner's width. Rounded "( )" ends. Desktop and tablet only. */
+/* Laid out at the proportions of the Facebook cover art, so every size is in container units (1cqw = 1% of the
+   banner's width). The band is clipped to a rainbow arch; the drop shadow on the wrapper follows that outline.
+   Desktop and tablet only. */
 .promo-img {
+  position: relative;
+  width: min(1320px, calc(100% - 2 * var(--gutter)));
+  margin: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 12px) auto 0;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.18)) drop-shadow(0 24px 50px rgba(255, 36, 67, 0.18));
+  font-family: var(--font-display);
+}
+.promo-img__defs { position: absolute; }
+.promo-img__band {
   position: relative;
   isolation: isolate;
   container-type: inline-size;
-  width: min(1320px, calc(100% - 2 * var(--gutter)));
-  aspect-ratio: 1640 / 412;
-  margin: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 12px) auto 0;
-  border-radius: 180px / 50%;
+  aspect-ratio: 1640 / 500;
   overflow: hidden;
   background: #09090b;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 30px 80px rgba(255, 36, 67, 0.12);
-  font-family: var(--font-display);
+  clip-path: url(#promo-arch);
 }
 .promo-img__glow {
   position: absolute;
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(40% 113.6% at 50% 54.5%, rgba(255, 36, 67, 0.32), transparent 70%),
-    radial-gradient(30% 91% at 50% 153%, rgba(255, 138, 53, 0.35), transparent 70%),
+    radial-gradient(40% 94% at 50% 45%, rgba(255, 36, 67, 0.32), transparent 70%),
+    radial-gradient(30% 75% at 50% 112%, rgba(255, 138, 53, 0.35), transparent 70%),
     radial-gradient(25% 75.8% at 0% -21%, rgba(255, 36, 67, 0.18), transparent 70%),
     radial-gradient(25% 75.8% at 100% 130%, rgba(255, 106, 53, 0.18), transparent 70%);
 }
@@ -5021,15 +5026,15 @@ video.feature-hero__preview {
   z-index: 3;
   pointer-events: none;
   background:
-    radial-gradient(40% 113.6% at 50% 54.5%, rgba(255, 36, 67, 0.28), transparent 70%),
-    radial-gradient(30% 91% at 50% 153%, rgba(255, 138, 53, 0.3), transparent 70%),
+    radial-gradient(40% 94% at 50% 45%, rgba(255, 36, 67, 0.28), transparent 70%),
+    radial-gradient(30% 75% at 50% 112%, rgba(255, 138, 53, 0.3), transparent 70%),
     linear-gradient(90deg, rgba(9, 9, 11, 0) 29.1%, rgba(9, 9, 11, 0.85) 38.4%, #09090b 41.9%, #09090b 58.1%, rgba(9, 9, 11, 0.85) 61.6%, rgba(9, 9, 11, 0) 70.9%);
 }
 .promo-img__card {
   position: absolute;
   z-index: 1;
   width: 7.073%;
-  height: 42.25%;
+  height: 34.8%;
   border-radius: 0.64cqw;
   overflow: hidden;
   opacity: var(--dim);
@@ -5038,7 +5043,7 @@ video.feature-hero__preview {
   transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.25, 1.25), opacity 0.3s, box-shadow 0.3s, filter 0.3s, z-index 0s 0.2s;
 }
 .promo-img__card--front { z-index: 2; }
-.promo-img__card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.promo-img__card img { display: block; width: 100%; height: 150%; object-fit: cover; object-position: 50% 0; } /* top of the frame: keeps burned-in subtitles out */
 /* Hover: the cover straightens, lifts and comes out of the shade, glowing. */
 .promo-img__card:hover,
 .promo-img__card:focus-visible {
@@ -5053,7 +5058,7 @@ video.feature-hero__preview {
 .promo-img__center {
   position: absolute;
   left: 50%;
-  top: 54.5%;
+  top: 44.9%;
   z-index: 4;
   transform: translate(-50%, -62%);
   display: flex;
@@ -5089,7 +5094,7 @@ video.feature-hero__preview {
 .promo-img__cta {
   position: absolute;
   left: 50%;
-  bottom: 9%;
+  top: 58%;
   z-index: 4;
   transform: translateX(-50%);
 }
