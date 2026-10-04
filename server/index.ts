@@ -66,6 +66,6 @@ pruneExpiredSessions()
 setInterval(pruneExpiredSessions, 6 * 60 * 60 * 1000).unref()
 
 app.listen(config.port, () => {
-  console.log(`[server] ReelFlix API listening on http://localhost:${config.port}`)
+  console.log(`[server] BingeTube API listening on http://localhost:${config.port}`)
   startBunnyAutoImport()
 })

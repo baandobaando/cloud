@@ -19,7 +19,7 @@ if (!video) {
 }
 const path = `/${video.guid}/playlist.m3u8`
 // Browsers always send a Referer, so test the way the app's player requests videos.
-const ref = { headers: { Referer: 'https://reelflix.example/' } }
+const ref = { headers: { Referer: 'https://binge.tube/' } }
 const plain = await fetch(`https://${host}${path}`, ref)
 if (plain.ok) {
   console.log('Unsigned playlist: HTTP 200 → CDN token authentication is OFF.')

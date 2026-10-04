@@ -16,12 +16,12 @@ if (!css || !js) throw new Error('Could not find built CSS/JS in dist-demo/index
 // "</script" inside inline JS would end the script element early.
 const safeJs = js.replace(/<\/script/gi, '<\\/script')
 
-const out = `<title>ReelFlix</title>
+const out = `<title>BingeTube</title>
 <meta name="theme-color" content="#0a0a0b">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap">
 <style>${css}</style>
 <div id="root"></div>
 <script type="module">${safeJs}</script>
 `
-fs.writeFileSync(path.join(dir, 'reelflix-demo.html'), out)
-console.log(`Wrote ${dir}/reelflix-demo.html (${(out.length / 1024).toFixed(0)} KB)`)
+fs.writeFileSync(path.join(dir, 'bingetube-demo.html'), out)
+console.log(`Wrote ${dir}/bingetube-demo.html (${(out.length / 1024).toFixed(0)} KB)`)

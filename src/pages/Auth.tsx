@@ -65,7 +65,7 @@ export function Login() {
       </form>
       {IS_DEMO && <DemoAdminHint onUse={(e, p) => { setEmail(e); setPassword(p) }} />}
       <p className="muted">
-        New to ReelFlix? <Link to={`/signup${params.get('next') ? `?next=${encodeURIComponent(params.get('next')!)}` : ''}`} className="link">Sign up now.</Link>
+        New to BingeTube? <Link to={`/signup${params.get('next') ? `?next=${encodeURIComponent(params.get('next')!)}` : ''}`} className="link">Sign up now.</Link>
       </p>
     </AuthShell>
   )

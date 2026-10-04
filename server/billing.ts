@@ -184,7 +184,7 @@ billingRouter.post('/orders', rateLimit({ windowMs: 10 * 60 * 1000, max: 20 }), 
     const { invoiceId, checkoutUrl } = await p.createInvoice({
       orderId: id,
       amountCents,
-      description: `ReelFlix membership — ${months} month${months > 1 ? 's' : ''}`,
+      description: `BingeTube membership — ${months} month${months > 1 ? 's' : ''}`,
       returnUrl: `${config.appUrl}/billing/order/${id}`,
     })
     db.prepare('UPDATE orders SET provider_invoice_id = ?, checkout_url = ? WHERE id = ?').run(invoiceId, checkoutUrl, id)

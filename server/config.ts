@@ -39,7 +39,7 @@ export const config = {
     /** Minutes between automatic syncs with Bunny (minimum 1). */
     syncMinutes: Math.max(1, Number(env.BUNNY_SYNC_MINUTES) || 5),
   },
-  adminEmail: env.ADMIN_EMAIL ?? (isProduction ? '' : 'admin@reelflix.local'),
+  adminEmail: env.ADMIN_EMAIL ?? (isProduction ? '' : 'admin@bingetube.local'),
   adminPassword: env.ADMIN_PASSWORD ?? (isProduction ? '' : 'admin12345'),
   /** Test checkout (no real charge). Never available in production. */
   allowTestBilling: !isProduction && env.TEST_BILLING !== 'off',

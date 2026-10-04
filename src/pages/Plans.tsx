@@ -53,7 +53,7 @@ export default function Plans() {
   return (
     <main className="page page--checkout">
       <header className="checkout__intro">
-        <span className="eyebrow">ReelFlix membership</span>
+        <span className="eyebrow">BingeTube membership</span>
         <h1>{me?.isEntitled ? 'Add more time' : 'Every episode. One price.'}</h1>
         <p className="muted">
           {activeUntil

@@ -1,4 +1,4 @@
-// In-browser stand-in for the ReelFlix API, used by the shareable demo build.
+// In-browser stand-in for the BingeTube API, used by the shareable demo build.
 // It mirrors the real server's routes and rules closely enough to click through every flow;
 // data lives in this browser only.
 import {
@@ -53,7 +53,7 @@ const DAY = 24 * 60 * 60 * 1000
 const STORAGE_KEY = 'reelflix-demo:v1'
 const PROFILE_COLORS = ['#e50914', '#2563eb', '#16a34a', '#9333ea', '#f59e0b', '#db2777']
 
-export const DEMO_ADMIN = { email: 'admin@reelflix.demo', password: 'admin12345' }
+export const DEMO_ADMIN = { email: 'admin@bingetube.demo', password: 'admin12345' }
 
 interface User {
   id: number

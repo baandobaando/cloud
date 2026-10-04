@@ -1,4 +1,4 @@
-# ReelFlix
+# BingeTube
 
 A Netflix-style streaming app for vertical short dramas (like ReelShort / DramaBox). Members pay for prepaid passes in **crypto** in place of coins or per-episode unlocks.
 
@@ -34,7 +34,7 @@ npm install
 npm run dev        # API on :3001 + web app on http://localhost:5173
 ```
 
-- **Admin login:** `admin@reelflix.local` / `admin12345` (local development only).
+- **Admin login:** `admin@bingetube.local` / `admin12345` (local development only).
 - **Test checkout:** With no processor keys set, a **Test checkout** payment option simulates a crypto payment, so you can try the whole flow. It is automatically disabled in production.
 
 ```bash

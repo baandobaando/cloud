@@ -139,7 +139,7 @@ export function TestCheckout() {
     <main className="test-checkout">
       <div className="test-checkout__card">
         <div className="test-checkout__warn">TEST MODE: no real payment</div>
-        <div className="muted small">ReelFlix membership · {order.months} mo</div>
+        <div className="muted small">BingeTube membership · {order.months} mo</div>
         <div className="test-checkout__amount">{formatPrice(order.amountCents)}</div>
         <label className="muted small" htmlFor="coin">
           Pay with

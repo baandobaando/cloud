@@ -6,6 +6,7 @@ import SeriesEditor from './SeriesEditor'
 import Users from './Users'
 import Orders from './Orders'
 import Icon from '../components/Icon'
+import BrandMark from '../components/BrandMark'
 import './admin.css'
 
 export default function Admin() {
@@ -14,7 +15,11 @@ export default function Admin() {
     <div className="admin">
       <aside className="admin__side">
         <Link to="/admin" className="logo">
-          reel<span>flix</span> <em className="admin__tag">Admin</em>
+          <BrandMark size={26} />
+          <span className="logo__word">
+            binge<span>tube</span>
+          </span>
+          <em className="admin__tag">Admin</em>
         </Link>
         <nav>
           <NavLink to="/admin" end><Icon name="chart" size={18} /> Dashboard</NavLink>

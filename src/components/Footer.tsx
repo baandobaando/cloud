@@ -26,7 +26,7 @@ export default function Footer() {
             <Link to="/plans">Plans &amp; pricing</Link>
             {me ? <Link to="/account">Account &amp; billing</Link> : <Link to="/signup">Create account</Link>}
             {!me && <Link to="/login">Sign in</Link>}
-            {!me && <Link to="/welcome">About ReelFlix</Link>}
+            {!me && <Link to="/welcome">About BingeTube</Link>}
           </div>
           {me?.isAdmin && (
             <div>
@@ -39,7 +39,7 @@ export default function Footer() {
           )}
         </nav>
       </div>
-      <p className="footer__legal muted small">© {year} ReelFlix. Payments in crypto via NOWPayments or BTCPay Server.</p>
+      <p className="footer__legal muted small">© {year} BingeTube. Payments in crypto via NOWPayments or BTCPay Server.</p>
     </footer>
   )
 }
