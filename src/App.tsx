@@ -8,9 +8,8 @@ import Landing from './pages/Landing'
 import { AuthRedirect, Login, Signup } from './pages/Auth'
 import ProfileGate from './pages/ProfileGate'
 import Home from './pages/Home'
-import NewAndHot from './pages/NewAndHot'
 import MyList from './pages/MyList'
-import Search from './pages/Search'
+import Browse from './pages/Browse'
 import Title from './pages/Title'
 import Watch from './pages/Watch'
 import Plans from './pages/Plans'
@@ -46,8 +45,9 @@ export default function App() {
               <Navbar />
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/new" element={<NewAndHot />} />
-                <Route path="/search" element={<Search />} />
+                <Route path="/browse" element={<Browse />} />
+                <Route path="/new" element={<Navigate to="/browse?sort=new" replace />} />
+                <Route path="/search" element={<Navigate to="/browse" replace />} />
                 <Route path="/title/:seriesId" element={<Title />} />
                 <Route path="/plans" element={<Plans />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
@@ -88,9 +88,10 @@ export default function App() {
             <Navbar />
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/new" element={<NewAndHot />} />
+              <Route path="/browse" element={<Browse />} />
+              <Route path="/new" element={<Navigate to="/browse?sort=new" replace />} />
               <Route path="/my-list" element={<MyList />} />
-              <Route path="/search" element={<Search />} />
+              <Route path="/search" element={<Navigate to="/browse" replace />} />
               <Route path="/title/:seriesId" element={<Title />} />
               <Route path="/plans" element={<Plans />} />
               <Route path="/account" element={<Account />} />

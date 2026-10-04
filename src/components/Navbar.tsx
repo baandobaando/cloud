@@ -37,11 +37,11 @@ export default function Navbar() {
         <NavLink to="/" end>
           Home
         </NavLink>
-        <NavLink to="/new">New &amp; Hot</NavLink>
+        <NavLink to="/browse">Browse</NavLink>
         <NavLink to="/my-list">My List</NavLink>
       </nav>
       <div className="navbar__right">
-        <NavLink to="/search" className="icon-btn icon-btn--ghost" aria-label="Search">
+        <NavLink to="/browse" className="icon-btn icon-btn--ghost navbar__search" aria-label="Search">
           <Icon name="search" />
         </NavLink>
         {!me && (
@@ -101,13 +101,9 @@ export default function Navbar() {
           <Icon name="home" />
           Home
         </NavLink>
-        <NavLink to="/new">
-          <Icon name="flame" />
-          New
-        </NavLink>
-        <NavLink to="/search">
+        <NavLink to="/browse">
           <Icon name="search" />
-          Search
+          Browse
         </NavLink>
         <NavLink to="/my-list">
           <Icon name="bookmark" />

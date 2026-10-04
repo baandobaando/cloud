@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useSession } from '../state/Session'
-import Poster from '../components/Poster'
+import SeriesCard from '../components/SeriesCard'
 import { Spinner } from '../components/Feedback'
 
 export default function MyList() {
@@ -10,18 +10,26 @@ export default function MyList() {
 
   return (
     <main className="page">
-      <h1 className="page__heading">My List</h1>
-      {items.length === 0 ? (
-        <p className="muted">Nothing saved yet. Tap “My List” on any series to keep it here.</p>
-      ) : (
-        <div className="grid">
-          {items.map((s) => (
-            <Link key={s.id} to={`/title/${s.id}`} className="card">
-              <Poster series={s} />
+      <div className="container">
+        <header className="browse__head">
+          <h1>My List</h1>
+          <p className="muted">Series you've saved to watch later.</p>
+        </header>
+        {items.length === 0 ? (
+          <div className="empty-note">
+            <p>Nothing saved yet. Tap “My List” on any series to keep it here.</p>
+            <Link to="/browse" className="btn btn--glass btn--small">
+              Browse series
             </Link>
-          ))}
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="card-grid">
+            {items.map((s) => (
+              <SeriesCard key={s.id} series={s} />
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   )
 }

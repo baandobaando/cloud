@@ -17,8 +17,8 @@ export default function Footer() {
           <div>
             <h3>Browse</h3>
             <Link to="/">Home</Link>
-            <Link to="/new">New &amp; Hot</Link>
-            <Link to="/search">Search &amp; genres</Link>
+            <Link to="/browse">Browse &amp; search</Link>
+            <Link to="/browse?sort=new">New releases</Link>
             <Link to="/my-list">My List</Link>
           </div>
           <div>
