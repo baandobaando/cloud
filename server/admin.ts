@@ -17,6 +17,7 @@ import {
   type SeriesInput,
 } from '../shared/types.ts'
 import { requireAdmin } from './auth.ts'
+import { config } from './config.ts'
 import { BUNNY_PREFIX, bunnyConfigured, listCollections } from './bunny.ts'
 import { runBunnyImport } from './bunnyImport.ts'
 import { fulfillOrder } from './billing.ts'
@@ -477,6 +478,8 @@ adminRouter.get('/bunny/status', async (_req, res) => {
     storageGb: Math.round(collections.reduce((n, c) => n + (c.totalSize ?? 0), 0) / 1e9),
     linkedSeries: linked,
     hiddenSeries: (db.prepare('SELECT COUNT(*) AS n FROM bunny_hidden').get() as { n: number }).n,
+    autoSync: process.env.BUNNY_AUTO_IMPORT !== 'off',
+    syncMinutes: config.bunny.syncMinutes,
   })
 })
 

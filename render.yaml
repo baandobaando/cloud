@@ -36,9 +36,11 @@ services:
         sync: false
       - key: BUNNY_TOKEN_KEY
         sync: false
-      # Sync shows from Bunny every 30 minutes and keep only each video's top resolution.
+      # Sync shows from Bunny every 5 minutes and keep only each video's top resolution.
       - key: BUNNY_AUTO_IMPORT
         value: "on"
+      - key: BUNNY_SYNC_MINUTES
+        value: "5"
       - key: BUNNY_KEEP_HIGHEST_ONLY
         value: "on"
       # Payment keys — optional at first; add them later under Environment.

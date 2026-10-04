@@ -36,6 +36,8 @@ export const config = {
     tokenMode: (env.BUNNY_TOKEN_MODE === 'hmac' ? 'hmac' : 'sha256') as 'sha256' | 'hmac',
     /** Delete every resolution except the highest on finished videos during each sync (BUNNY_KEEP_HIGHEST_ONLY=off to stop). */
     keepHighestOnly: env.BUNNY_KEEP_HIGHEST_ONLY !== 'off',
+    /** Minutes between automatic syncs with Bunny (minimum 1). */
+    syncMinutes: Math.max(1, Number(env.BUNNY_SYNC_MINUTES) || 5),
   },
   adminEmail: env.ADMIN_EMAIL ?? (isProduction ? '' : 'admin@reelflix.local'),
   adminPassword: env.ADMIN_PASSWORD ?? (isProduction ? '' : 'admin12345'),

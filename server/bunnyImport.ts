@@ -124,8 +124,8 @@ function importOnce(publishNew: boolean): Promise<ImportResult> {
 
 /**
  * Keeps the catalog in sync with Bunny without anyone pressing a button:
- * imports (and publishes) on startup, then checks for new episodes every 30 minutes.
- * Disable with BUNNY_AUTO_IMPORT=off.
+ * imports (and publishes) on startup, then checks for new episodes every BUNNY_SYNC_MINUTES
+ * (default 5). Disable with BUNNY_AUTO_IMPORT=off.
  */
 export function startBunnyAutoImport() {
   if (!bunnyConfigured() || process.env.BUNNY_AUTO_IMPORT === 'off') return
@@ -136,5 +136,6 @@ export function startBunnyAutoImport() {
       .then((r) => console.log(`[bunny] Synced ${r.created + r.updated} series, ${r.episodes} episodes (${r.created} new, ${r.pending} still processing, ${r.trimmed} trimmed to top quality)`))
       .catch((err) => console.error('[bunny] Sync failed:', err.message))
   setTimeout(sync, 1000)
-  setInterval(sync, 30 * 60 * 1000).unref()
+  setInterval(sync, config.bunny.syncMinutes * 60 * 1000).unref()
+  console.log(`[bunny] Auto-sync every ${config.bunny.syncMinutes} minute${config.bunny.syncMinutes === 1 ? '' : 's'}`)
 }

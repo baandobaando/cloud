@@ -12,6 +12,8 @@ interface Status {
   storageGb?: number
   linkedSeries?: number
   hiddenSeries?: number
+  autoSync?: boolean
+  syncMinutes?: number
 }
 
 interface ImportResult {
@@ -109,8 +111,10 @@ export default function BunnyImport({ onImported }: { onImported: () => void }) 
         </div>
       </div>
       <p className="muted small">
-        The site syncs with Bunny automatically every 30 minutes; use the button to sync right now. Each collection becomes a
-        series and each finished video an episode, ordered by the number in its title.
+        {status.autoSync
+          ? `The site syncs with Bunny automatically every ${status.syncMinutes} minute${status.syncMinutes === 1 ? '' : 's'}; use the button to sync right now.`
+          : 'Automatic sync is off; use the button to sync.'}{' '}
+        Each collection becomes a series and each finished video an episode, ordered by the number in its title.
       </p>
       {result && (
         <div className="bunny__result">
