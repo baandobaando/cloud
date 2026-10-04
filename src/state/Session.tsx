@@ -2,26 +2,6 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Me, Profile, ProfileState, SeriesSummary } from '../../shared/types'
 import { ApiError, api } from '../api'
 
-const ACTIVE_PROFILE_KEY = 'reelflix:profile'
-
-function readStoredProfile(): number | null {
-  try {
-    const v = Number(localStorage.getItem(ACTIVE_PROFILE_KEY))
-    return Number.isInteger(v) && v > 0 ? v : null
-  } catch {
-    return null
-  }
-}
-
-function storeProfile(id: number | null) {
-  try {
-    if (id) localStorage.setItem(ACTIVE_PROFILE_KEY, String(id))
-    else localStorage.removeItem(ACTIVE_PROFILE_KEY)
-  } catch {
-    /* storage unavailable */
-  }
-}
-
 interface SessionValue {
   /** undefined while loading, null when signed out. */
   me: Me | null | undefined
@@ -33,7 +13,6 @@ interface SessionValue {
   logout: () => Promise<void>
 
   activeProfile: Profile | null
-  selectProfile: (id: number | null) => void
 
   catalog: SeriesSummary[] | undefined
   catalogError: string | null
@@ -60,7 +39,6 @@ if (BOOT) delete window.__BOOT__
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null | undefined>(BOOT?.me)
   const [meError, setMeError] = useState<string | null>(null)
-  const [profileId, setProfileId] = useState<number | null>(readStoredProfile)
   const [catalog, setCatalog] = useState<SeriesSummary[] | undefined>(BOOT?.catalog)
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [profileState, setProfileState] = useState<ProfileState>(EMPTY_STATE)
@@ -98,7 +76,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .catch((e) => setCatalogError(e.message))
   }, [])
 
-  const activeProfile = me?.profiles.find((p) => p.id === profileId) ?? null
+  // Every account has exactly one profile, used automatically.
+  const activeProfile = me?.profiles[0] ?? null
 
   useEffect(() => {
     if (!activeProfile) {
@@ -115,35 +94,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [activeProfile?.id])
 
-  const selectProfile = useCallback((id: number | null) => {
-    storeProfile(id)
-    setProfileId(id)
-  }, [])
-
   const login = useCallback(
     async (email: string, password: string) => {
       await api.post('/auth/login', { email, password })
-      const next = await refreshMe()
-      if (next?.profiles.length === 1) selectProfile(next.profiles[0].id)
-      else selectProfile(null)
+      await refreshMe()
     },
-    [refreshMe, selectProfile],
+    [refreshMe],
   )
 
   const signup = useCallback(
     async (email: string, password: string, name: string) => {
       await api.post('/auth/signup', { email, password, name })
-      const next = await refreshMe()
-      if (next?.profiles[0]) selectProfile(next.profiles[0].id)
+      await refreshMe()
     },
-    [refreshMe, selectProfile],
+    [refreshMe],
   )
 
   const logout = useCallback(async () => {
     await api.post('/auth/logout').catch(() => {})
-    selectProfile(null)
     setMe(null)
-  }, [selectProfile])
+  }, [])
 
   const toggleMyList = useCallback(
     (seriesId: string) => {
@@ -188,7 +158,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       signup,
       logout,
       activeProfile,
-      selectProfile,
       catalog,
       catalogError,
       myList: profileState.myList,
@@ -196,7 +165,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       progress: profileState.progress,
       saveProgress,
     }),
-    [me, meError, refreshMe, login, signup, logout, activeProfile, selectProfile, catalog, catalogError, profileState, toggleMyList, saveProgress],
+    [me, meError, refreshMe, login, signup, logout, activeProfile, catalog, catalogError, profileState, toggleMyList, saveProgress],
   )
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

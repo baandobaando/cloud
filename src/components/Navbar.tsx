@@ -5,7 +5,7 @@ import Icon from './Icon'
 import Logo from './Logo'
 
 export default function Navbar() {
-  const { me, activeProfile, selectProfile, logout } = useSession()
+  const { me, activeProfile, logout } = useSession()
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -70,34 +70,6 @@ export default function Navbar() {
               </button>
               {menuOpen && (
                 <div className="menu__panel">
-                  {me &&
-                    me.profiles.length > 1 &&
-                    me.profiles
-                      .filter((p) => p.id !== activeProfile?.id)
-                      .map((p) => (
-                        <button
-                          key={p.id}
-                          className="menu__item"
-                          onClick={() => {
-                            selectProfile(p.id)
-                            go('/')
-                          }}
-                        >
-                          <span className="menu__swatch" style={{ background: p.color }}>
-                            {p.name[0]}
-                          </span>
-                          {p.name}
-                        </button>
-                      ))}
-                  <button
-                    className="menu__item"
-                    onClick={() => {
-                      selectProfile(null)
-                      setMenuOpen(false)
-                    }}
-                  >
-                    <Icon name="users" size={18} /> Switch or manage profiles
-                  </button>
                   <button className="menu__item" onClick={() => go('/account')}>
                     <Icon name="user" size={18} /> Account &amp; membership
                   </button>

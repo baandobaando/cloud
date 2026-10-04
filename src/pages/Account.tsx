@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<OrderView['status'], string> = {
 
 export default function Account() {
   usePageTitle('Account')
-  const { me, logout, selectProfile } = useSession()
+  const { me, logout } = useSession()
   const navigate = useNavigate()
   const toast = useToast()
   const dialog = useDialog()
@@ -158,9 +158,6 @@ export default function Account() {
       </section>
 
       <section className="panel panel--row">
-        <button className="btn btn--secondary" onClick={() => { selectProfile(null); navigate('/') }}>
-          Manage profiles
-        </button>
         <button className="btn btn--glass" onClick={() => logout().then(() => navigate('/'))}>
           Sign out
         </button>

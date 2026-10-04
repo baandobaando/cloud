@@ -7,10 +7,15 @@ import { getSubscription, isEntitled } from './models.ts'
 
 export const accountRouter = Router()
 
-const MAX_PROFILES = 5
+/** One profile per account. */
+const MAX_PROFILES = 1
 
 /** What /me returns for a signed-in user (also baked into the page HTML so the app can render straight away). */
 export function buildMe(user: NonNullable<Request['user']>): Me {
+  // Every account gets its one profile (older accounts may predate it).
+  if (!db.prepare('SELECT 1 FROM profiles WHERE user_id = ?').get(user.id)) {
+    db.prepare('INSERT INTO profiles (user_id, name, color, created_at) VALUES (?, ?, ?, ?)').run(user.id, user.name || 'Me', nextProfileColor(user.id), Date.now())
+  }
   const profiles = db
     .prepare('SELECT id, name, color FROM profiles WHERE user_id = ? ORDER BY id')
     .all(user.id) as unknown as Me['profiles']
@@ -45,7 +50,7 @@ function seriesExists(id: string): string {
 accountRouter.post('/profiles', (req, res) => {
   const name = str(req.body?.name, 'Name', { min: 1, max: 16 })
   const { n } = db.prepare('SELECT COUNT(*) AS n FROM profiles WHERE user_id = ?').get(req.user!.id) as { n: number }
-  if (n >= MAX_PROFILES) throw new HttpError(400, `You can have up to ${MAX_PROFILES} profiles`)
+  if (n >= MAX_PROFILES) throw new HttpError(400, 'Each account has one profile')
   const color = nextProfileColor(req.user!.id)
   const { lastInsertRowid } = db
     .prepare('INSERT INTO profiles (user_id, name, color, created_at) VALUES (?, ?, ?, ?)')

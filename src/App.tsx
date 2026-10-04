@@ -6,7 +6,6 @@ import Footer from './components/Footer'
 import { ErrorState, Spinner } from './components/Feedback'
 import Landing from './pages/Landing'
 import { AuthRedirect, Login, Signup } from './pages/Auth'
-import ProfileGate from './pages/ProfileGate'
 import Home from './pages/Home'
 import MyList from './pages/MyList'
 import Browse from './pages/Browse'
@@ -22,7 +21,7 @@ import NotFound from './pages/NotFound'
 const Admin = lazy(() => import('./admin/Admin'))
 
 export default function App() {
-  const { me, meError, refreshMe, activeProfile } = useSession()
+  const { me, meError, refreshMe } = useSession()
   const location = useLocation()
 
   if (me === undefined && meError) return <ErrorState message="Couldn't reach BingeTube. Check your connection and try again." onRetry={() => refreshMe()} />
@@ -77,10 +76,6 @@ export default function App() {
       </Suspense>
     )
   }
-
-  // Billing and account pages work without picking a profile (e.g. returning from a payment processor).
-  const profileOptional = /^\/(billing|account)\b/.test(location.pathname)
-  if (!activeProfile && !profileOptional) return <ProfileGate />
 
   return (
     <Routes>
