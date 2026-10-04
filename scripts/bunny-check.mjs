@@ -18,8 +18,16 @@ if (!video) {
   process.exit(0)
 }
 const path = `/${video.guid}/playlist.m3u8`
-const plain = await fetch(`https://${host}${path}`)
-console.log(`Unsigned playlist: HTTP ${plain.status}${plain.ok ? ' (token authentication is OFF: anyone with a link can watch)' : ''}`)
+// Browsers always send a Referer, so test the way the app's player requests videos.
+const ref = { headers: { Referer: 'https://reelflix.example/' } }
+const plain = await fetch(`https://${host}${path}`, ref)
+if (plain.ok) {
+  console.log('Unsigned playlist: HTTP 200 → CDN token authentication is OFF.')
+  console.log('  Leave BUNNY_TOKEN_KEY unset (signed links would 404), or turn on CDN token authentication')
+  console.log('  in the library Security tab (or the vz-… pull zone → Security) and run this again.')
+  process.exit(0)
+}
+console.log(`Unsigned playlist: HTTP ${plain.status} → token authentication is ON`)
 if (!tokenKey) {
   console.log('BUNNY_TOKEN_KEY not set: copy it from the library → Security tab to test signed playback.')
   process.exit(0)
@@ -27,6 +35,6 @@ if (!tokenKey) {
 const expires = Math.floor(Date.now() / 1000) + 600
 for (const mode of ['sha256', 'hmac']) {
   const url = signCdnUrl({ path, expires, tokenPath: `/${video.guid}/`, key: tokenKey, mode, host })
-  const r = await fetch(url)
+  const r = await fetch(url, ref)
   console.log(`Signed playlist (${mode}): HTTP ${r.status}${r.ok ? ` ✓  → set BUNNY_TOKEN_MODE=${mode}` : ''}`)
 }
