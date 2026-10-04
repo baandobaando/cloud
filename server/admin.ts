@@ -17,16 +17,8 @@ import {
   type SeriesInput,
 } from '../shared/types.ts'
 import { requireAdmin } from './auth.ts'
-import {
-  BUNNY_PREFIX,
-  bunnyConfigured,
-  cleanTitle,
-  guessGenres,
-  listCollections,
-  listVideos,
-  paletteFor,
-  planEpisodes,
-} from './bunny.ts'
+import { BUNNY_PREFIX, bunnyConfigured, listCollections } from './bunny.ts'
+import { runBunnyImport } from './bunnyImport.ts'
 import { fulfillOrder } from './billing.ts'
 import { mediaDirs } from './catalog.ts'
 import { db, transaction } from './db.ts'
@@ -456,76 +448,7 @@ adminRouter.get('/bunny/status', async (_req, res) => {
   })
 })
 
-interface ImportReportRow {
-  collection: string
-  seriesId: string
-  action: 'created' | 'updated' | 'skipped'
-  episodes: number
-  pending: number
-  missing: number[]
-  note?: string
-}
-
-/**
- * Creates or refreshes one series per Bunny collection. Only finished videos are imported;
- * re-running picks up episodes that finished processing since the last import.
- */
 adminRouter.post('/bunny/import', async (req, res) => {
   if (!bunnyConfigured()) throw new HttpError(400, 'Bunny Stream is not configured on the server')
-  const publishNew = req.body?.publish === true
-  const collections = await listCollections()
-  const report: ImportReportRow[] = []
-
-  for (const col of collections) {
-    const videos = await listVideos(col.guid)
-    const plan = planEpisodes(videos)
-    const title = cleanTitle(col.name)
-    const existing = db.prepare('SELECT id FROM series WHERE bunny_collection_id = ?').get(col.guid) as { id: string } | undefined
-
-    if (plan.episodes.length === 0) {
-      report.push({ collection: col.name, seriesId: existing?.id ?? '', action: 'skipped', episodes: 0, pending: plan.pending, missing: [], note: 'No finished videos yet' })
-      continue
-    }
-    if (existing) {
-      const foreign = db
-        .prepare("SELECT COUNT(*) AS n FROM episodes WHERE series_id = ? AND (video_url IS NULL OR video_url NOT LIKE 'bunny:%')")
-        .get(existing.id) as { n: number }
-      if (foreign.n > 0) {
-        report.push({ collection: col.name, seriesId: existing.id, action: 'skipped', episodes: 0, pending: plan.pending, missing: plan.missing, note: 'Series has episodes added by hand; left unchanged' })
-        continue
-      }
-    }
-
-    const seriesId = existing?.id ?? slugify(title)
-    const now = Date.now()
-    transaction(() => {
-      if (!existing) {
-        db.prepare(
-          `INSERT INTO series (id, title, tagline, synopsis, genres, year, rating, palette, emoji, poster_url, is_new, trending_rank,
-             free_episodes, published, created_at, updated_at, bunny_collection_id)
-           VALUES (?, ?, '', '', ?, ?, 'TV-14', ?, '🎬', ?, 1, NULL, 5, ?, ?, ?, ?)`,
-        ).run(seriesId, title, JSON.stringify(guessGenres(title)), new Date().getFullYear(), JSON.stringify(paletteFor(title)),
-          `${BUNNY_PREFIX}${plan.episodes[0].video.guid}/thumbnail.jpg`, publishNew ? 1 : 0, now, now, col.guid)
-      } else {
-        db.prepare(
-          `UPDATE series SET updated_at = ?, poster_url = COALESCE(poster_url, ?) WHERE id = ?`,
-        ).run(now, `${BUNNY_PREFIX}${plan.episodes[0].video.guid}/thumbnail.jpg`, seriesId)
-        db.prepare('DELETE FROM episodes WHERE series_id = ?').run(seriesId)
-      }
-      const insert = db.prepare('INSERT INTO episodes (series_id, number, title, duration_sec, video_url) VALUES (?, ?, ?, ?, ?)')
-      for (const ep of plan.episodes) {
-        insert.run(seriesId, ep.number, `Episode ${ep.number}`, Math.max(1, Math.round(ep.video.length)), `${BUNNY_PREFIX}${ep.video.guid}`)
-      }
-    })
-    report.push({ collection: col.name, seriesId, action: existing ? 'updated' : 'created', episodes: plan.episodes.length, pending: plan.pending, missing: plan.missing })
-  }
-
-  res.json({
-    created: report.filter((r) => r.action === 'created').length,
-    updated: report.filter((r) => r.action === 'updated').length,
-    skipped: report.filter((r) => r.action === 'skipped').length,
-    episodes: report.reduce((n, r) => n + r.episodes, 0),
-    pending: report.reduce((n, r) => n + r.pending, 0),
-    report,
-  })
+  res.json(await runBunnyImport({ publishNew: req.body?.publish === true }))
 })

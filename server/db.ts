@@ -149,6 +149,8 @@ export function transaction<T>(fn: () => T): T {
 /** Sample series for local development only; a production database starts empty (import from Bunny). */
 function seedCatalog() {
   if (isProduction && process.env.SEED_SAMPLE_CATALOG !== 'true') return
+  // With a real Bunny library connected, start with just those shows.
+  if (config.bunny.libraryId && config.bunny.libraryKey && process.env.SEED_SAMPLE_CATALOG !== 'true') return
   const { n } = db.prepare('SELECT COUNT(*) AS n FROM series').get() as { n: number }
   if (n > 0) return
 

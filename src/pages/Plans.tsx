@@ -124,9 +124,15 @@ export default function Plans() {
             <span className="muted small">Total today</span>
             <strong>{formatPrice(total)}</strong>
           </div>
-          <button className="btn btn--accent btn--lg" disabled={busy || !provider} onClick={checkout}>
-            {busy ? 'Starting checkout…' : 'Continue to payment'}
-          </button>
+          {me ? (
+            <button className="btn btn--accent btn--lg" disabled={busy || !provider} onClick={checkout}>
+              {busy ? 'Starting checkout…' : 'Continue to payment'}
+            </button>
+          ) : (
+            <button className="btn btn--accent btn--lg" onClick={() => navigate('/signup?next=/plans')}>
+              Create account to continue
+            </button>
+          )}
         </div>
         {checkoutError && <div className="form__error">{checkoutError}</div>}
         <p className="muted small">

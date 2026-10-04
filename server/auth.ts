@@ -9,7 +9,7 @@ const scrypt = promisify(crypto.scrypt) as (pw: string, salt: Buffer, keylen: nu
 
 const SESSION_COOKIE = 'rf_session'
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
-const PROFILE_COLORS = ['#e50914', '#2563eb', '#16a34a', '#9333ea', '#f59e0b', '#db2777']
+const PROFILE_COLORS = ['#5f5a54', '#3f566e', '#4e6656', '#6a5068', '#7a6646', '#6e4a4a']
 
 export interface AuthUser {
   id: number

@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useSession } from './state/Session'
 import Navbar from './components/Navbar'
+import Footer from './components/Footer'
 import { Spinner } from './components/Feedback'
 import Landing from './pages/Landing'
 import { AuthRedirect, Login, Signup } from './pages/Auth'
@@ -25,15 +26,35 @@ export default function App() {
 
   if (me === undefined) return <Spinner fullscreen />
 
+  // Visitors can browse everything and watch free episodes; an account is needed for lists, progress and paying.
   if (!me) {
+    const toLogin = <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
     return (
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/welcome" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/watch/:seriesId/:episode" element={<Watch />} />
+        <Route path="/my-list" element={toLogin} />
+        <Route path="/account" element={toLogin} />
+        <Route path="/billing/*" element={toLogin} />
+        <Route path="/admin/*" element={toLogin} />
         <Route
           path="*"
-          element={<Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />}
+          element={
+            <>
+              <Navbar />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/new" element={<NewAndHot />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/title/:seriesId" element={<Title />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+              <Footer />
+            </>
+          }
         />
       </Routes>
     )
@@ -76,8 +97,10 @@ export default function App() {
               <Route path="/billing/order/:orderId" element={<OrderStatusPage />} />
               <Route path="/login" element={<AuthRedirect />} />
               <Route path="/signup" element={<AuthRedirect />} />
+              <Route path="/welcome" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <Footer />
           </>
         }
       />

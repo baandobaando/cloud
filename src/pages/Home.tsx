@@ -19,7 +19,9 @@ export default function Home() {
     .sort(([, a], [, b]) => b.updatedAt - a.updatedAt)
     .map(([id]) => byId.get(id))
     .filter((s) => s !== undefined)
-  const trending = catalog.filter((s) => s.trendingRank).sort((a, b) => a.trendingRank! - b.trendingRank!)
+  const ranked = catalog.filter((s) => s.trendingRank).sort((a, b) => a.trendingRank! - b.trendingRank!)
+  // Until an admin sets trending ranks, feature the biggest series rather than showing an empty row.
+  const trending = ranked.length ? ranked : [...catalog].sort((a, b) => b.episodeCount - a.episodeCount).slice(0, 10)
   const fresh = catalog.filter((s) => s.isNew)
   const saved = myList.map((id) => byId.get(id)).filter((s) => s !== undefined)
 
@@ -29,7 +31,7 @@ export default function Home() {
       <div className="rows">
         <RenewalBanner />
         <Row title="Continue Watching" items={continueWatching} showProgress />
-        <Row title="Top 10 today" items={trending.slice(0, 10)} ranked />
+        <Row title={ranked.length ? 'Top 10 today' : 'Featured'} items={trending.slice(0, 10)} ranked={ranked.length > 0} />
         <Row title="New releases" items={fresh} />
         <Row title="My List" items={saved} />
         {GENRES.map((g) => (

@@ -55,7 +55,7 @@ export default function Title() {
               {resumeEp ? `Resume episode ${resumeEp}` : 'Play episode 1'}
             </Link>
           )}
-          <button className="btn btn--glass" onClick={() => toggleMyList(series.id)}>
+          <button className="btn btn--glass" onClick={() => (me ? toggleMyList(series.id) : navigate(`/signup?next=/title/${series.id}`))}>
             <Icon name={inList ? 'check' : 'plus'} size={18} />
             {inList ? 'In My List' : 'My List'}
           </button>

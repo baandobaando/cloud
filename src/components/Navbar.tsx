@@ -44,11 +44,17 @@ export default function Navbar() {
         <NavLink to="/search" className="icon-btn icon-btn--ghost" aria-label="Search">
           <Icon name="search" />
         </NavLink>
-        {me && !me.isEntitled && (
-          <Link to="/plans" className="btn btn--small btn--accent">
+        {!me && (
+          <Link to="/login" className="btn btn--small btn--glass">
+            Sign in
+          </Link>
+        )}
+        {(!me || !me.isEntitled) && (
+          <Link to={me ? '/plans' : '/signup?next=/plans'} className="btn btn--small btn--accent">
             Join for $9.99
           </Link>
         )}
+        {me && (
         <div className="menu" ref={menuRef}>
           <button
             className="avatar"
@@ -88,6 +94,7 @@ export default function Navbar() {
             </div>
           )}
         </div>
+        )}
       </div>
       <nav className="bottom-tabs">
         <NavLink to="/" end>

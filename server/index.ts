@@ -5,6 +5,7 @@ import { accountRouter } from './account.ts'
 import { adminRouter } from './admin.ts'
 import { authRouter, ensureAdmin, loadUser, pruneExpiredSessions, sameOrigin } from './auth.ts'
 import { billingRouter } from './billing.ts'
+import { startBunnyAutoImport } from './bunnyImport.ts'
 import { catalogRouter, mediaRouter } from './catalog.ts'
 import { config, isProduction } from './config.ts'
 import { HttpError, errorHandler } from './http.ts'
@@ -66,4 +67,5 @@ setInterval(pruneExpiredSessions, 6 * 60 * 60 * 1000).unref()
 
 app.listen(config.port, () => {
   console.log(`[server] ReelFlix API listening on http://localhost:${config.port}`)
+  startBunnyAutoImport()
 })

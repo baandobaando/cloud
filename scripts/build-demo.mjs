@@ -17,8 +17,8 @@ if (!css || !js) throw new Error('Could not find built CSS/JS in dist-demo/index
 const safeJs = js.replace(/<\/script/gi, '<\\/script')
 
 const out = `<title>ReelFlix</title>
-<meta name="theme-color" content="#0e0b13">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
 <style>${css}</style>
 <div id="root"></div>
 <script type="module">${safeJs}</script>
