@@ -167,3 +167,19 @@ describe('Password for social-only accounts', () => {
     assert.equal(login.status, 200)
   })
 })
+
+describe('Delete account', () => {
+  test('removes the user and their session', async () => {
+    const r = await signIn('google', (nonce) => ({
+      iss: 'https://accounts.google.com', aud: 'google-client', sub: 'g-del', exp: Date.now() / 1000 + 300, nonce, email: 'bye@example.com', email_verified: true,
+    }))
+    const res = await realFetch(`${base}/api/auth/delete-account`, {
+      method: 'POST',
+      headers: { cookie: r.session!, 'content-type': 'application/json' },
+      body: JSON.stringify({ confirm: true }),
+    })
+    assert.equal(res.status, 200)
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM users WHERE email = 'bye@example.com'").get()?.n, 0)
+    assert.equal(await me(r.session), null)
+  })
+})

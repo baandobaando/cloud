@@ -199,6 +199,16 @@ authRouter.post('/password', requireUser, authLimiter, async (req, res) => {
   res.json({ ok: true })
 })
 
+// Account deletion from inside the app (required by the App Store). Deleting the user cascades to sessions,
+// profiles, lists, progress and membership; payment records keep their amounts but lose the link to the person.
+authRouter.post('/delete-account', requireUser, authLimiter, (req, res) => {
+  if (req.body?.confirm !== true) throw new HttpError(400, 'Please confirm you want to delete your account')
+  if (req.user!.isAdmin) throw new HttpError(400, 'Admin accounts cannot be deleted from here')
+  db.prepare('DELETE FROM users WHERE id = ?').run(req.user!.id)
+  res.clearCookie(SESSION_COOKIE, { path: '/' })
+  res.json({ ok: true })
+})
+
 export function pruneExpiredSessions() {
   db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now())
 }
