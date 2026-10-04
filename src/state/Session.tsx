@@ -48,11 +48,20 @@ const SessionContext = createContext<SessionValue | null>(null)
 
 const EMPTY_STATE: ProfileState = { myList: [], progress: {} }
 
+/** The server bakes the viewer's account and the catalog into the page; read it once, then let it go. */
+declare global {
+  interface Window {
+    __BOOT__?: { me: Me | null; catalog: SeriesSummary[] }
+  }
+}
+const BOOT = typeof window !== 'undefined' ? window.__BOOT__ : undefined
+if (BOOT) delete window.__BOOT__
+
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [me, setMe] = useState<Me | null | undefined>(undefined)
+  const [me, setMe] = useState<Me | null | undefined>(BOOT?.me)
   const [meError, setMeError] = useState<string | null>(null)
   const [profileId, setProfileId] = useState<number | null>(readStoredProfile)
-  const [catalog, setCatalog] = useState<SeriesSummary[] | undefined>(undefined)
+  const [catalog, setCatalog] = useState<SeriesSummary[] | undefined>(BOOT?.catalog)
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [profileState, setProfileState] = useState<ProfileState>(EMPTY_STATE)
 
@@ -74,11 +83,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    refreshMe()
+    if (!BOOT) refreshMe()
   }, [refreshMe])
 
-  // The catalog is public; load it once (and again after sign-in, in case admins see drafts later).
+  // The catalog is public and the same for everyone, so it's loaded once (the page usually ships it already).
   useEffect(() => {
+    if (BOOT) return
     api
       .get<SeriesSummary[]>('/catalog')
       .then((c) => {
@@ -86,7 +96,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setCatalogError(null)
       })
       .catch((e) => setCatalogError(e.message))
-  }, [me?.id])
+  }, [])
 
   const activeProfile = me?.profiles.find((p) => p.id === profileId) ?? null
 

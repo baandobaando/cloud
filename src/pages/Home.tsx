@@ -34,6 +34,7 @@ export default function Home() {
 
   return (
     <main className="page page--home">
+      <PromoBanner catalog={popular} />
       <Hero items={popular.slice(0, 5)} />
       <div className="container sections">
         <RenewalBanner />
@@ -49,7 +50,6 @@ export default function Home() {
             <SeriesCard key={s.id} series={s} rank={i + 1} />
           ))}
         </Shelf>
-        <PromoBanner catalog={popular} />
         <Shelf title="New releases" subtitle="Fresh series added this week" seeAll="/browse?sort=new">
           {newest.map((s) => (
             <SeriesCard key={s.id} series={s} fresh />

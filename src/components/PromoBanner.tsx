@@ -22,7 +22,7 @@ export default function PromoBanner({ catalog }: { catalog: SeriesSummary[] }) {
   )
 
   return (
-    <section className="promo" aria-label="Join BingeTube">
+    <section className="promo promo--top" aria-label="Join BingeTube">
       <div className="promo__glow" />
       {fan(covers.slice(0, 3), 'left')}
       {fan(covers.slice(3, 6), 'right')}

@@ -5120,3 +5120,37 @@ video.feature-hero__preview {
   .promo__glow { animation: none; }
   .promo__card { transition: none; }
 }
+
+/* At the top of the home page: full width under the navbar, flowing into the featured show below it. */
+.promo--top {
+  min-height: 0;
+  height: 340px;
+  margin-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+  padding: 24px var(--gutter);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.promo--top .promo__glow { mask-image: linear-gradient(180deg, transparent, #000 25%, #000 70%, transparent); }
+.promo--top::after { -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent); mask-image: linear-gradient(180deg, #000 55%, transparent); }
+.promo--top .promo__fan { height: 240px; }
+.promo--top .promo__card { width: 140px; height: 210px; }
+.promo--top .promo__word { font-size: 52px; }
+.promo--top .promo__logo .brand-mark { width: 54px; height: 54px; }
+.promo--top .promo__tag { font-size: 24px; }
+.promo--top .promo__center { gap: 12px; }
+/* The featured show sits right under the banner, so it no longer needs room for the navbar. */
+.promo--top + .feature-hero {
+  padding-top: 2.5rem;
+  /* Fade its red glow in from the banner instead of starting at a hard line. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 220px);
+  mask-image: linear-gradient(180deg, transparent, #000 220px);
+}
+@media (max-width: 700px) {
+  .promo--top { height: auto; padding: 16px 16px 24px; }
+  .promo--top .promo__fan { height: 140px; }
+  .promo--top .promo__card { width: 84px; height: 126px; }
+  .promo--top .promo__word { font-size: 38px; }
+  .promo--top .promo__logo .brand-mark { width: 42px; height: 42px; }
+  .promo--top .promo__tag { font-size: 20px; }
+}

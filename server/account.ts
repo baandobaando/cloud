@@ -9,22 +9,22 @@ export const accountRouter = Router()
 
 const MAX_PROFILES = 5
 
-accountRouter.get('/me', (req, res) => {
-  if (!req.user) {
-    res.json(null)
-    return
-  }
+/** What /me returns for a signed-in user (also baked into the page HTML so the app can render straight away). */
+export function buildMe(user: NonNullable<Request['user']>): Me {
   const profiles = db
     .prepare('SELECT id, name, color FROM profiles WHERE user_id = ? ORDER BY id')
-    .all(req.user.id) as unknown as Me['profiles']
-  const me: Me = {
-    ...req.user,
-    subscription: getSubscription(req.user.id),
-    isEntitled: isEntitled(req.user),
+    .all(user.id) as unknown as Me['profiles']
+  return {
+    ...user,
+    subscription: getSubscription(user.id),
+    isEntitled: isEntitled(user),
     profiles,
-    hasPassword: (db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.user.id) as { password_hash: string }).password_hash.startsWith('scrypt$'),
+    hasPassword: (db.prepare('SELECT password_hash FROM users WHERE id = ?').get(user.id) as { password_hash: string }).password_hash.startsWith('scrypt$'),
   }
-  res.json(me)
+}
+
+accountRouter.get('/me', (req, res) => {
+  res.json(req.user ? buildMe(req.user) : null)
 })
 
 accountRouter.use('/profiles', requireUser)

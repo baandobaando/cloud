@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { Router } from 'express'
+import type { SeriesSummary } from '../shared/types.ts'
 import { config } from './config.ts'
 import { db } from './db.ts'
 import { HttpError } from './http.ts'
@@ -8,11 +9,16 @@ import { SERIES_SELECT, isEntitled, toEpisodeView, toSummary, type EpisodeRow, t
 
 export const catalogRouter = Router()
 
-catalogRouter.get('/catalog', (_req, res) => {
+/** Every published series, newest first. Public, so the same for every viewer. */
+export function publicCatalog(): SeriesSummary[] {
   const rows = db
     .prepare(`${SERIES_SELECT} WHERE s.published = 1 ORDER BY s.created_at DESC`)
     .all() as unknown as SeriesRow[]
-  res.json(rows.map(toSummary))
+  return rows.map(toSummary)
+}
+
+catalogRouter.get('/catalog', (_req, res) => {
+  res.json(publicCatalog())
 })
 
 catalogRouter.get('/series/:id', (req, res) => {
