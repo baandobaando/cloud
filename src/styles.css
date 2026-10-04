@@ -5019,25 +5019,21 @@ video.feature-hero__preview {
   position: relative;
   isolation: isolate;
   container-type: inline-size;
-  width: 100%;
+  width: min(1180px, calc(100% - 2 * var(--gutter)));
   aspect-ratio: 1640 / 412;
-  margin-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
-  overflow: hidden;
-  background: #09090b;
+  margin: calc(var(--nav-h) + env(safe-area-inset-top, 0px)) auto 0;
   font-family: var(--font-display);
-  /* Full width, fading into the page above and below. */
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 12%, #000 93%, transparent);
-  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 93%, transparent);
+  /* No box of its own: the glow fades out on every side so it sits on the page background. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 10%, #000 94%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 10%, #000 94%, transparent);
 }
 .promo-img__glow {
   position: absolute;
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(40% 113.6% at 50% 54.5%, rgba(255, 36, 67, 0.32), transparent 70%),
-    radial-gradient(30% 91% at 50% 153%, rgba(255, 138, 53, 0.35), transparent 70%),
-    radial-gradient(25% 75.8% at 0% -21%, rgba(255, 36, 67, 0.18), transparent 70%),
-    radial-gradient(25% 75.8% at 100% 130%, rgba(255, 106, 53, 0.18), transparent 70%);
+    radial-gradient(40% 90% at 50% 54.5%, rgba(255, 36, 67, 0.26), transparent 70%),
+    radial-gradient(30% 70% at 50% 120%, rgba(255, 138, 53, 0.22), transparent 70%);
 }
 /* Darkens toward the middle so the inner covers sink behind the copy, then a second glow on top. */
 .promo-img__shade {
@@ -5048,7 +5044,7 @@ video.feature-hero__preview {
   background:
     radial-gradient(40% 113.6% at 50% 54.5%, rgba(255, 36, 67, 0.28), transparent 70%),
     radial-gradient(30% 91% at 50% 153%, rgba(255, 138, 53, 0.3), transparent 70%),
-    linear-gradient(90deg, rgba(9, 9, 11, 0) 29.1%, rgba(9, 9, 11, 0.85) 38.4%, #09090b 41.9%, #09090b 58.1%, rgba(9, 9, 11, 0.85) 61.6%, rgba(9, 9, 11, 0) 70.9%);
+    linear-gradient(90deg, rgba(10, 10, 11, 0) 29.1%, rgba(10, 10, 11, 0.85) 38.4%, rgba(10, 10, 11, 0.96) 41.9%, rgba(10, 10, 11, 0.96) 58.1%, rgba(10, 10, 11, 0.85) 61.6%, rgba(10, 10, 11, 0) 70.9%);
 }
 .promo-img__card {
   position: absolute;
@@ -5120,7 +5116,12 @@ video.feature-hero__preview {
 }
 /* The featured show sits right under the banner, so it no longer needs room for the navbar. */
 @media (min-width: 701px) {
-  .promo-img + .feature-hero { padding-top: 2.5rem; }
+  .promo-img + .feature-hero {
+    padding-top: 2rem;
+    /* Its red glow fades in from the banner rather than starting at a hard line. */
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 200px);
+    mask-image: linear-gradient(180deg, transparent, #000 200px);
+  }
 }
 @media (max-width: 700px) {
   .promo-img { display: none; }

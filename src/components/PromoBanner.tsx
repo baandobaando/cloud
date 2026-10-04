@@ -55,7 +55,7 @@ export default function PromoBanner() {
         </ul>
       </div>
       {to && (
-        <Link to={to} className="btn btn--accent btn--lg promo-img__cta">
+        <Link to={to} className="btn btn--accent promo-img__cta">
           {me ? 'Unlock every episode' : 'Start watching free'}
         </Link>
       )}
