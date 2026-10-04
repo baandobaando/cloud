@@ -176,6 +176,10 @@ export interface AdminEpisode {
 
 export interface AdminSeriesDetail extends AdminSeries {
   episodes: AdminEpisode[]
+  /** Views per episode number over the last 30 days (shows where viewers drop off). */
+  episodeViews30d?: Record<number, number>
+  /** Bunny videos an admin removed from this series; the sync won't re-add them. */
+  removedFromBunny?: number
 }
 
 export interface AdminStats {

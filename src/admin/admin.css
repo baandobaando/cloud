@@ -1515,3 +1515,110 @@ textarea.input {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Series editor ---------- */
+
+.estats {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.estats__item {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.estats__item strong {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.estats__item span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.estats__item--warn {
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.estats__item--warn strong {
+  color: #fbbf24;
+}
+
+.eview {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-raise);
+}
+
+.dropoff {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.dropoff__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 90px;
+}
+
+.dropoff__bar {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 3px 3px 0 0;
+  background: #3987e5;
+  transition: opacity 0.15s;
+}
+
+.dropoff__bar.is-free {
+  background: var(--accent);
+}
+
+.dropoff__bar:hover {
+  opacity: 0.7;
+}
+
+.status--btn {
+  border: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.input--len {
+  width: 64px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-video {
+  width: 100%;
+  max-height: 70vh;
+  aspect-ratio: 9 / 16;
+  border-radius: 12px;
+  background: #000;
+}
+
+@media (max-width: 1100px) {
+  .estats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .estats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -92,7 +92,21 @@ function seriesRow(id: string): SeriesRow {
 function seriesDetail(id: string): AdminSeriesDetail {
   const row = seriesRow(id)
   const eps = db.prepare('SELECT * FROM episodes WHERE series_id = ? ORDER BY number').all(id) as unknown as EpisodeRow[]
-  return { ...toAdminSeries(row), episodes: eps.map(toAdminEpisode) }
+  const since = Date.now() - 30 * DAY_MS
+  const views = db
+    .prepare('SELECT episode_number AS n, COUNT(*) AS c FROM episode_views WHERE series_id = ? AND created_at > ? GROUP BY episode_number')
+    .all(id, since) as { n: number; c: number }[]
+  const viewers = (db.prepare('SELECT COUNT(DISTINCT profile_id) AS n FROM episode_views WHERE series_id = ? AND created_at > ?').get(id, since) as { n: number }).n
+  return {
+    ...toAdminSeries(row),
+    episodes: eps.map(toAdminEpisode),
+    source: row.bunny_collection_id ? 'bunny' : 'manual',
+    runtimeSec: eps.reduce((n, e) => n + e.duration_sec, 0),
+    views30d: views.reduce((n, v) => n + v.c, 0),
+    viewers30d: viewers,
+    episodeViews30d: Object.fromEntries(views.map((v) => [v.n, v.c])),
+    removedFromBunny: (db.prepare('SELECT COUNT(*) AS n FROM bunny_removed_episodes WHERE series_id = ?').get(id) as { n: number }).n,
+  }
 }
 
 function episodeRow(req: Request): EpisodeRow {
