@@ -3715,3 +3715,44 @@ code {
   color: transparent;
   font-weight: 800;
 }
+
+/* Taller top bar with a larger logo. */
+:root {
+  --nav-h: 80px;
+}
+
+.navbar .logo {
+  font-size: 1.7rem;
+  gap: 0.6rem;
+}
+
+.navbar__links a {
+  font-size: 1rem;
+}
+
+.navbar .btn--small {
+  min-height: 42px;
+  padding: 0 1.15rem;
+  font-size: 0.92rem;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --nav-h: 68px;
+  }
+
+  .navbar .logo {
+    font-size: 1.4rem;
+  }
+
+  .navbar .brand-mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  .navbar .btn--small {
+    min-height: 38px;
+    padding: 0 0.85rem;
+    font-size: 0.85rem;
+  }
+}
