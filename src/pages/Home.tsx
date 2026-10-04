@@ -34,7 +34,7 @@ export default function Home() {
 
   return (
     <main className="page page--home">
-      <PromoBanner catalog={popular} />
+      <PromoBanner />
       <Hero items={popular.slice(0, 5)} />
       <div className="container sections">
         <RenewalBanner />
