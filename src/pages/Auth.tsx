@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { errorMessage } from '../api'
+import { IS_DEMO, errorMessage } from '../api'
+import { DemoAdminHint } from '../demo/DemoHints'
 import { useSession } from '../state/Session'
 
 /** Only allow redirecting to paths on this site. */
@@ -63,6 +64,7 @@ export function Login() {
           {busy ? 'Signing in…' : 'Sign In'}
         </button>
       </form>
+      {IS_DEMO && <DemoAdminHint onUse={(e, p) => { setEmail(e); setPassword(p) }} />}
       <p className="muted">
         New to ReelFlix? <Link to={`/signup${params.get('next') ? `?next=${encodeURIComponent(params.get('next')!)}` : ''}`} className="link">Sign up now.</Link>
       </p>

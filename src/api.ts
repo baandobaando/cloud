@@ -1,12 +1,15 @@
-export class ApiError extends Error {
-  status: number
-  constructor(status: number, message: string) {
-    super(message)
-    this.status = status
-  }
-}
+import { ApiError } from './apiError'
+
+export { ApiError }
+
+/** The shareable demo build runs against an in-browser mock of the API. */
+export const IS_DEMO = import.meta.env.VITE_DEMO === '1'
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
+  if (IS_DEMO) {
+    const { mockRequest } = await import('./demo/mockApi')
+    return mockRequest<T>(method, url, body)
+  }
   const init: RequestInit = { method, credentials: 'same-origin', headers: {} }
   if (body instanceof FormData) {
     init.body = body
@@ -35,6 +38,7 @@ export const api = {
 
 /** Upload with progress reporting (fetch can't report upload progress). */
 export function upload<T>(url: string, form: FormData, onProgress?: (pct: number) => void): Promise<T> {
+  if (IS_DEMO) return import('./demo/mockApi').then((m) => m.mockUpload<T>(url, form, onProgress))
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', `/api${url}`)

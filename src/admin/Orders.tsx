@@ -4,6 +4,7 @@ import { api, errorMessage } from '../api'
 import { useApi } from '../useApi'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { useToast } from '../components/Toast'
+import { useDialog } from '../components/Dialog'
 
 interface AdminOrder {
   id: string
@@ -30,11 +31,17 @@ const FILTERS: { id: OrderStatus | ''; label: string }[] = [
 
 export default function Orders() {
   const toast = useToast()
+  const dialog = useDialog()
   const [status, setStatus] = useState<OrderStatus | ''>('')
   const { data, error, reload } = useApi<AdminOrder[]>(`/admin/orders?status=${status}`)
 
   const markPaid = async (o: AdminOrder) => {
-    if (!window.confirm(`Mark order ${o.id.slice(0, 8)} as paid and give ${o.email} ${o.months} month(s) of ${o.plan}?\n\nOnly do this after confirming the funds arrived in your ${o.provider} dashboard.`)) return
+    const ok = await dialog.confirm({
+      title: `Mark order ${o.id.slice(0, 8)} as paid?`,
+      message: `${o.email} gets ${o.months} month(s) of ${o.plan}. Only do this after confirming the funds arrived in your ${o.provider} dashboard.`,
+      confirmLabel: 'Mark paid',
+    })
+    if (!ok) return
     try {
       await api.post(`/admin/orders/${o.id}/mark-paid`)
       toast('Order marked paid', 'success')

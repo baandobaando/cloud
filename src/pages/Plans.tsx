@@ -45,7 +45,11 @@ export default function Plans() {
     setCheckoutError(null)
     try {
       const returnTo = params.get('return')
-      if (returnTo?.startsWith('/')) sessionStorage.setItem('reelflix:return', returnTo)
+      try {
+        if (returnTo?.startsWith('/')) sessionStorage.setItem('reelflix:return', returnTo)
+      } catch {
+        /* storage unavailable: buyers just land on Home after paying */
+      }
       const { checkoutUrl } = await api.post<{ orderId: string; checkoutUrl: string }>('/billing/orders', {
         plan,
         months,

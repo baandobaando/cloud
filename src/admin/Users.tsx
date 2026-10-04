@@ -5,6 +5,7 @@ import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { useToast } from '../components/Toast'
+import { useDialog } from '../components/Dialog'
 
 function accessLabel(u: AdminUser): { text: string; cls: string } {
   const s = u.subscription
@@ -19,6 +20,7 @@ function accessLabel(u: AdminUser): { text: string; cls: string } {
 export default function Users() {
   const { me } = useSession()
   const toast = useToast()
+  const dialog = useDialog()
   const [q, setQ] = useState('')
   const [debounced, setDebounced] = useState('')
   const [filter, setFilter] = useState<'all' | 'subscribers' | 'admins'>('all')
@@ -34,7 +36,12 @@ export default function Users() {
   const replace = (u: AdminUser) => setData((list) => list?.map((x) => (x.id === u.id ? u : x)))
 
   const toggleAdmin = async (u: AdminUser) => {
-    if (!window.confirm(u.isAdmin ? `Remove admin access from ${u.email}?` : `Make ${u.email} an admin? They'll be able to change everything.`)) return
+    const ok = await dialog.confirm(
+      u.isAdmin
+        ? { title: `Remove admin access from ${u.email}?`, confirmLabel: 'Remove admin', danger: true }
+        : { title: `Make ${u.email} an admin?`, message: 'Admins can change everything, including series, users and orders.', confirmLabel: 'Make admin' },
+    )
+    if (!ok) return
     try {
       replace(await api.patch<AdminUser>(`/admin/users/${u.id}`, { isAdmin: !u.isAdmin }))
     } catch (err) {
@@ -43,7 +50,13 @@ export default function Users() {
   }
 
   const revoke = async (u: AdminUser) => {
-    if (!window.confirm(`Remove ${u.email}'s membership now? This doesn't refund any payment.`)) return
+    const ok = await dialog.confirm({
+      title: `Remove ${u.email}'s membership?`,
+      message: "Access ends immediately. This doesn't refund any payment.",
+      confirmLabel: 'Remove access',
+      danger: true,
+    })
+    if (!ok) return
     try {
       replace(await api.del<AdminUser>(`/admin/users/${u.id}/access`))
       toast('Access removed', 'success')

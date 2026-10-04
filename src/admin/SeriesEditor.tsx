@@ -13,6 +13,7 @@ import { useApi } from '../useApi'
 import Poster from '../components/Poster'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { useToast } from '../components/Toast'
+import { useDialog } from '../components/Dialog'
 
 const EMPTY: SeriesInput = {
   title: '',
@@ -64,6 +65,7 @@ export default function SeriesEditor() {
   const isNew = !seriesId
   const navigate = useNavigate()
   const toast = useToast()
+  const dialog = useDialog()
   const { data: loaded, setData: setLoaded, error, reload } = useApi<AdminSeriesDetail>(
     isNew ? null : `/admin/series/${encodeURIComponent(seriesId)}`,
   )
@@ -116,7 +118,13 @@ export default function SeriesEditor() {
 
   const remove = async () => {
     if (!loaded) return
-    const typed = window.prompt(`This permanently deletes "${loaded.title}", all ${loaded.episodes.length} episodes and uploaded videos.\n\nType DELETE to confirm.`)
+    const typed = await dialog.prompt({
+      title: `Delete “${loaded.title}”?`,
+      message: `This permanently deletes the series, all ${loaded.episodes.length} episodes and their uploaded videos. Type DELETE to confirm.`,
+      requireText: 'DELETE',
+      confirmLabel: 'Delete series',
+      danger: true,
+    })
     if (typed !== 'DELETE') return
     try {
       await api.del(`/admin/series/${encodeURIComponent(loaded.id)}`)
@@ -138,9 +146,9 @@ export default function SeriesEditor() {
         </div>
         <div className="admin__actions">
           {loaded?.published && (
-            <a href={`/title/${loaded.id}`} target="_blank" rel="noreferrer" className="btn btn--grey btn--small">
-              View in app ↗
-            </a>
+            <Link to={`/title/${loaded.id}`} className="btn btn--grey btn--small">
+              View in app
+            </Link>
           )}
           {!isNew && (
             <button
@@ -421,6 +429,7 @@ function Episodes({ series, onChange }: { series: AdminSeriesDetail; onChange: (
 
 function EpisodeRow({ ep, free, isLast, onChange }: { ep: AdminEpisode; free: boolean; isLast: boolean; onChange: (s: AdminSeriesDetail) => void }) {
   const toast = useToast()
+  const dialog = useDialog()
   const [title, setTitle] = useState(ep.title)
   const [editingUrl, setEditingUrl] = useState(false)
   const [url, setUrl] = useState(ep.videoUrl ?? '')
@@ -528,7 +537,15 @@ function EpisodeRow({ ep, free, isLast, onChange }: { ep: AdminEpisode; free: bo
         <button
           className="icon-btn icon-btn--small"
           title="Delete episode"
-          onClick={() => window.confirm(`Delete episode ${ep.number} "${ep.title}"? Later episodes will be renumbered.`) && act(() => api.del(`/admin/episodes/${ep.id}`))}
+          onClick={async () => {
+            const ok = await dialog.confirm({
+              title: `Delete episode ${ep.number}?`,
+              message: `“${ep.title}” will be removed and later episodes renumbered.`,
+              confirmLabel: 'Delete episode',
+              danger: true,
+            })
+            if (ok) act(() => api.del(`/admin/episodes/${ep.id}`))
+          }}
         >
           🗑
         </button>

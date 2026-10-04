@@ -3,12 +3,14 @@ import type { Profile } from '../../shared/types'
 import { api, errorMessage } from '../api'
 import { useSession } from '../state/Session'
 import { useToast } from '../components/Toast'
+import { useDialog } from '../components/Dialog'
 
 const MAX_PROFILES = 5
 
 export default function ProfileGate() {
   const { me, selectProfile, refreshMe } = useSession()
   const toast = useToast()
+  const dialog = useDialog()
   const [managing, setManaging] = useState(false)
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
@@ -28,7 +30,7 @@ export default function ProfileGate() {
   }
 
   const rename = async (p: Profile) => {
-    const next = window.prompt('Profile name', p.name)?.trim()
+    const next = await dialog.prompt({ title: 'Rename profile', defaultValue: p.name, confirmLabel: 'Save' })
     if (!next || next === p.name) return
     try {
       await api.patch(`/profiles/${p.id}`, { name: next })
@@ -39,7 +41,13 @@ export default function ProfileGate() {
   }
 
   const remove = async (p: Profile) => {
-    if (!window.confirm(`Delete the "${p.name}" profile? Its list and watch history will be lost.`)) return
+    const ok = await dialog.confirm({
+      title: `Delete ${p.name}?`,
+      message: 'This profile’s list and watch history will be deleted.',
+      confirmLabel: 'Delete profile',
+      danger: true,
+    })
+    if (!ok) return
     try {
       await api.del(`/profiles/${p.id}`)
       await refreshMe()

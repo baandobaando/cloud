@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PLANS, formatPrice } from '../../shared/types'
+import { IS_DEMO } from '../api'
 import { useSession } from '../state/Session'
 import Poster from '../components/Poster'
 
@@ -38,6 +39,12 @@ export default function Landing() {
           <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
           <button className="btn btn--red">Get Started ›</button>
         </form>
+        {IS_DEMO && (
+          <p className="demo-note">
+            Interactive demo. Create any account to look around. Everything stays in this browser and payments are
+            simulated. <Link to="/login">Admin sign-in details</Link> are on the sign-in page.
+          </p>
+        )}
         <ul className="landing__points">
           <li>
             <strong>📱 Made for your phone</strong>Swipe through vertical episodes, 1–2 minutes each.

@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PLANS, formatPrice, type OrderView } from '../../shared/types'
-import { api, errorMessage } from '../api'
+import { IS_DEMO, api, errorMessage } from '../api'
+import { ResetDemoButton } from '../demo/DemoHints'
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import { useToast } from '../components/Toast'
@@ -132,6 +133,7 @@ export default function Account() {
         <button className="btn btn--outline" onClick={() => logout().then(() => navigate('/'))}>
           Sign out
         </button>
+        {IS_DEMO && <ResetDemoButton />}
       </section>
     </main>
   )
