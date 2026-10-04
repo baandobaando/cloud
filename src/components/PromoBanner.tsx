@@ -17,11 +17,11 @@ const CARDS: { img: string; id: string; title: string; left: number; top: number
   { img: '18', id: 'he-begs-for-the-heart-he-broke-120-times', title: 'He Begs for the Heart He Broke 120 Times', left: 70.51, top: 26.7, rot: 12, scale: 0.92, dim: 0.75 },
 ]
 
-/** The brand banner at the top of the home page (desktop and tablet), shown to anyone who isn't a member yet. */
+/** The brand banner at the top of the home page (desktop and tablet). */
 export default function PromoBanner() {
   const { me } = useSession()
-  if (me?.isEntitled) return null
-  const to = me ? '/plans?return=/' : '/signup'
+  // Members see the banner too, just without the sign-up button.
+  const to = me?.isEntitled ? null : me ? '/plans?return=/' : '/signup'
 
   return (
     <section className="promo-img" aria-label="Join BingeTube">
@@ -61,9 +61,11 @@ export default function PromoBanner() {
             <li>🔥 New Episodes Daily</li>
           </ul>
         </div>
-        <Link to={to} className="btn btn--accent btn--lg promo-img__cta">
-          {me ? 'Unlock every episode' : 'Start watching free'}
-        </Link>
+        {to && (
+          <Link to={to} className="btn btn--accent btn--lg promo-img__cta">
+            {me ? 'Unlock every episode' : 'Start watching free'}
+          </Link>
+        )}
       </div>
     </section>
   )
