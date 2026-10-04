@@ -5115,6 +5115,37 @@ video.feature-hero__preview {
   transform: translateX(-50%);
 }
 /* The featured show sits right under the banner, so it no longer needs room for the navbar. */
+/* Red glow that rises from the banner up behind the top bar, so the top of the page isn't a separate black strip. */
+@media (min-width: 701px) {
+  .page--home:has(> .promo-img) {
+    position: relative;
+    display: flow-root; /* keeps the banner's top margin inside, so the glow starts at the very top of the page */
+  }
+  .page--home:has(> .promo-img)::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    /* Runs from the very top, behind the see-through top bar, down into the featured show's fade-in. */
+    height: calc(var(--nav-h) + min(1180px, 100vw) * 412 / 1640 + 260px);
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(45% 55% at 50% 0%, rgba(255, 36, 67, 0.2), transparent 75%),
+      radial-gradient(50% 55% at 50% 40%, rgba(255, 36, 67, 0.14), transparent 70%),
+      /* The featured show's red side glows, continued upward. */
+      radial-gradient(16% 85% at 0% 100%, rgba(255, 0, 51, 0.4), transparent 72%),
+      radial-gradient(16% 85% at 100% 100%, rgba(255, 0, 51, 0.4), transparent 72%);
+  }
+  .page--home > .promo-img {
+    z-index: 1;
+  }
+  /* While at the top, the bar is see-through so the glow runs up behind it. */
+  body:has(.page--home > .promo-img) .navbar:not(.navbar--solid) {
+    background: transparent;
+    border-bottom-color: transparent;
+  }
+}
+
 @media (min-width: 701px) {
   .promo-img + .feature-hero {
     padding-top: 2rem;
