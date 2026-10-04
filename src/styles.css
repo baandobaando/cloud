@@ -4876,13 +4876,37 @@ video.feature-hero__preview {
   }
 }
 
+/* Phones: the whole featured block (cover, title, buttons) fits between the top bar and the bottom tabs, so the
+   cover shrinks on short screens. ~19rem covers the badge, title, meta, buttons and spacing. */
 @media (max-width: 720px) {
+  .feature-hero {
+    --cover-w: clamp(110px, calc((100svh - var(--nav-h) - 19rem - 70px) * 0.5625), 200px);
+    padding-top: calc(var(--nav-h) + 1rem);
+    padding-bottom: 1.5rem;
+  }
+
   .feature-hero__cover {
-    width: min(50vw, 200px);
+    width: var(--cover-w);
   }
 
   .hero-arrow {
-    top: calc(var(--nav-h) + 1.5rem + min(50vw, 200px) * 0.89);
+    top: calc(var(--nav-h) + 1rem + var(--cover-w) * 0.89);
+  }
+
+  .feature-hero__inner {
+    gap: 1.1rem;
+  }
+
+  .feature-hero__copy {
+    gap: 0.7rem;
+  }
+
+  .feature-hero__copy .actions {
+    margin-top: 0.2rem;
+  }
+
+  .feature-hero__copy .hero-dots {
+    margin-top: 0.6rem;
   }
 }
 
@@ -4989,33 +5013,28 @@ video.feature-hero__preview {
 }
 
 /* ---------- Promo banner (top of home, non-members) ---------- */
-/* Laid out at the proportions of the Facebook cover art, so every size is in container units (1cqw = 1% of the
-   banner's width). The band is clipped to a rainbow arch; the drop shadow on the wrapper follows that outline.
-   Desktop and tablet only. */
+/* Built at the proportions of the Facebook cover art (1640 x 412 after cropping), so every size is in container
+   units: 1cqw = 1% of the banner's width. Rounded "( )" ends. Desktop and tablet only. */
 .promo-img {
-  position: relative;
-  width: min(1320px, calc(100% - 2 * var(--gutter)));
-  margin: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 12px) auto 0;
-  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.18)) drop-shadow(0 24px 50px rgba(255, 36, 67, 0.18));
-  font-family: var(--font-display);
-}
-.promo-img__defs { position: absolute; }
-.promo-img__band {
   position: relative;
   isolation: isolate;
   container-type: inline-size;
-  aspect-ratio: 1640 / 500;
+  width: min(1320px, calc(100% - 2 * var(--gutter)));
+  aspect-ratio: 1640 / 412;
+  margin: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 12px) auto 0;
+  border-radius: 180px / 50%;
   overflow: hidden;
   background: #09090b;
-  clip-path: url(#promo-arch);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 30px 80px rgba(255, 36, 67, 0.12);
+  font-family: var(--font-display);
 }
 .promo-img__glow {
   position: absolute;
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(40% 94% at 50% 45%, rgba(255, 36, 67, 0.32), transparent 70%),
-    radial-gradient(30% 75% at 50% 112%, rgba(255, 138, 53, 0.35), transparent 70%),
+    radial-gradient(40% 113.6% at 50% 54.5%, rgba(255, 36, 67, 0.32), transparent 70%),
+    radial-gradient(30% 91% at 50% 153%, rgba(255, 138, 53, 0.35), transparent 70%),
     radial-gradient(25% 75.8% at 0% -21%, rgba(255, 36, 67, 0.18), transparent 70%),
     radial-gradient(25% 75.8% at 100% 130%, rgba(255, 106, 53, 0.18), transparent 70%);
 }
@@ -5026,15 +5045,15 @@ video.feature-hero__preview {
   z-index: 3;
   pointer-events: none;
   background:
-    radial-gradient(40% 94% at 50% 45%, rgba(255, 36, 67, 0.28), transparent 70%),
-    radial-gradient(30% 75% at 50% 112%, rgba(255, 138, 53, 0.3), transparent 70%),
+    radial-gradient(40% 113.6% at 50% 54.5%, rgba(255, 36, 67, 0.28), transparent 70%),
+    radial-gradient(30% 91% at 50% 153%, rgba(255, 138, 53, 0.3), transparent 70%),
     linear-gradient(90deg, rgba(9, 9, 11, 0) 29.1%, rgba(9, 9, 11, 0.85) 38.4%, #09090b 41.9%, #09090b 58.1%, rgba(9, 9, 11, 0.85) 61.6%, rgba(9, 9, 11, 0) 70.9%);
 }
 .promo-img__card {
   position: absolute;
   z-index: 1;
   width: 7.073%;
-  height: 34.8%;
+  height: 42.25%;
   border-radius: 0.64cqw;
   overflow: hidden;
   opacity: var(--dim);
@@ -5058,7 +5077,7 @@ video.feature-hero__preview {
 .promo-img__center {
   position: absolute;
   left: 50%;
-  top: 44.9%;
+  top: 54.5%;
   z-index: 4;
   transform: translate(-50%, -62%);
   display: flex;
@@ -5094,7 +5113,7 @@ video.feature-hero__preview {
 .promo-img__cta {
   position: absolute;
   left: 50%;
-  top: 58%;
+  bottom: 9%;
   z-index: 4;
   transform: translateX(-50%);
 }
