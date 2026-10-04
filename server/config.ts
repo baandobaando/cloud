@@ -34,6 +34,8 @@ export const config = {
     tokenKey: env.BUNNY_TOKEN_KEY ?? '',
     /** 'sha256' (classic) or 'hmac' (HS256). `npm run bunny:check` tells you which one your library accepts. */
     tokenMode: (env.BUNNY_TOKEN_MODE === 'hmac' ? 'hmac' : 'sha256') as 'sha256' | 'hmac',
+    /** Delete every resolution except the highest on finished videos during each sync (BUNNY_KEEP_HIGHEST_ONLY=off to stop). */
+    keepHighestOnly: env.BUNNY_KEEP_HIGHEST_ONLY !== 'off',
   },
   adminEmail: env.ADMIN_EMAIL ?? (isProduction ? '' : 'admin@reelflix.local'),
   adminPassword: env.ADMIN_PASSWORD ?? (isProduction ? '' : 'admin12345'),

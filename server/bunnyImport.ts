@@ -1,5 +1,6 @@
 // Bunny Stream → catalog import, used by the admin button and the automatic background sync.
-import { BUNNY_PREFIX, bunnyConfigured, cleanTitle, guessGenres, listCollections, listVideos, paletteFor, planEpisodes } from './bunny.ts'
+import { config } from './config.ts'
+import { BUNNY_PREFIX, bunnyConfigured, cleanTitle, guessGenres, keepHighestResolution, listCollections, listVideos, paletteFor, planEpisodes } from './bunny.ts'
 import { db, transaction } from './db.ts'
 
 export interface ImportReportRow {
@@ -18,6 +19,8 @@ export interface ImportResult {
   skipped: number
   episodes: number
   pending: number
+  /** Videos trimmed to their highest resolution during this run. */
+  trimmed: number
   report: ImportReportRow[]
 }
 
@@ -96,7 +99,10 @@ export async function runBunnyImport({ publishNew }: { publishNew: boolean }): P
     report.push({ collection: col.name, seriesId, action: existing ? 'updated' : 'created', episodes: plan.episodes.length, pending: plan.pending, missing: plan.missing })
   }
 
+  const trimmed = config.bunny.keepHighestOnly ? await keepHighestResolution([...videosByCollection.values()].flat()) : 0
+
   return {
+    trimmed,
     created: report.filter((r) => r.action === 'created').length,
     updated: report.filter((r) => r.action === 'updated').length,
     skipped: report.filter((r) => r.action === 'skipped').length,
@@ -127,7 +133,7 @@ export function startBunnyAutoImport() {
   db.prepare('UPDATE series SET published = 0 WHERE bunny_collection_id IS NULL AND id IN (SELECT DISTINCT series_id FROM episodes WHERE video_url LIKE ?)').run('/sample/%')
   const sync = () =>
     importOnce(true)
-      .then((r) => console.log(`[bunny] Synced ${r.created + r.updated} series, ${r.episodes} episodes (${r.created} new, ${r.pending} still processing)`))
+      .then((r) => console.log(`[bunny] Synced ${r.created + r.updated} series, ${r.episodes} episodes (${r.created} new, ${r.pending} still processing, ${r.trimmed} trimmed to top quality)`))
       .catch((err) => console.error('[bunny] Sync failed:', err.message))
   setTimeout(sync, 1000)
   setInterval(sync, 30 * 60 * 1000).unref()

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 import { describe, test } from 'node:test'
-import { cleanTitle, guessGenres, parseEpisodeNumber, planEpisodes, signCdnUrl, type BunnyVideo } from './bunny.ts'
+import { cleanTitle, extraResolutions, guessGenres, parseEpisodeNumber, planEpisodes, signCdnUrl, type BunnyVideo } from './bunny.ts'
 
 const video = (title: string, extra: Partial<BunnyVideo> = {}): BunnyVideo => ({
   guid: crypto.randomUUID(),
@@ -76,5 +76,16 @@ describe('signCdnUrl', () => {
     const url = signCdnUrl({ path: '/vid/thumbnail.jpg', expires: 1800000000, key: 'k', mode: 'hmac', host: 'h.b-cdn.net' })
     const expected = 'HS256-' + b64url(crypto.createHmac('sha256', 'k').update('/vid/thumbnail.jpg' + '1800000000').digest())
     assert.equal(url, `https://h.b-cdn.net/vid/thumbnail.jpg?token=${expected}&expires=1800000000`)
+  })
+})
+
+describe('extraResolutions', () => {
+  test('keeps only the highest resolution', () => {
+    assert.deepEqual(extraResolutions('360p,480p,720p,240p,1080p').sort(), ['240p', '360p', '480p', '720p'])
+    assert.deepEqual(extraResolutions('480p,240p,360p').sort(), ['240p', '360p'])
+  })
+  test('leaves single-resolution videos alone', () => {
+    assert.deepEqual(extraResolutions('240p'), [])
+    assert.deepEqual(extraResolutions(null), [])
   })
 })

@@ -58,6 +58,41 @@ export const listCollections = () => paged<BunnyCollection>('/collections?orderB
 export const listVideos = (collectionId: string) =>
   paged<BunnyVideo>(`/videos?collection=${encodeURIComponent(collectionId)}&orderBy=date`, 1000)
 
+const heightOf = (r: string) => Number.parseInt(r, 10) || 0
+
+/** Resolutions to delete so only the highest remains (empty when there's one or none). */
+export function extraResolutions(available: string | null): string[] {
+  const res = (available ?? '').split(',').map((r) => r.trim()).filter(Boolean)
+  if (res.length <= 1) return []
+  const highest = res.reduce((a, b) => (heightOf(b) > heightOf(a) ? b : a))
+  return res.filter((r) => r !== highest)
+}
+
+/**
+ * Deletes every resolution except the highest on finished videos. Original source files are never
+ * touched. Returns how many videos were trimmed.
+ */
+export async function keepHighestResolution(videos: BunnyVideo[], concurrency = 5): Promise<number> {
+  const jobs = videos
+    .filter((v) => v.status === 4)
+    .map((v) => ({ v, remove: extraResolutions(v.availableResolutions) }))
+    .filter((j) => j.remove.length > 0)
+  let trimmed = 0
+  await Promise.all(
+    Array.from({ length: concurrency }, async () => {
+      for (let job = jobs.shift(); job; job = jobs.shift()) {
+        const q = new URLSearchParams({ resolutionsToDelete: job.remove.join(','), deleteMp4Files: 'true', deleteOriginal: 'false' })
+        const res = await fetch(`${API}/library/${config.bunny.libraryId}/videos/${job.v.guid}/resolutions/cleanup?${q}`, {
+          method: 'POST',
+          headers: { AccessKey: config.bunny.libraryKey, Accept: 'application/json' },
+        }).catch(() => null)
+        if (res?.ok) trimmed++
+      }
+    }),
+  )
+  return trimmed
+}
+
 // ---------------------------------------------------------------- signed URLs
 
 function b64url(buf: Buffer): string {
