@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
-import { getSeries } from '../data/catalog'
-import { useAppState } from '../state/AppState'
+import { useSession } from '../state/Session'
 import Poster from '../components/Poster'
+import { Spinner } from '../components/Feedback'
 
 export default function MyList() {
-  const { myList } = useAppState()
-  const items = myList.map(getSeries).filter((s) => s !== undefined)
+  const { myList, catalog } = useSession()
+  if (!catalog) return <Spinner fullscreen />
+  const items = myList.map((id) => catalog.find((s) => s.id === id)).filter((s) => s !== undefined)
 
   return (
     <main className="page">

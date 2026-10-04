@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
-import type { Series } from '../data/catalog'
-import { useAppState } from '../state/AppState'
+import type { SeriesSummary } from '../../shared/types'
+import { useSession } from '../state/Session'
 import Poster from './Poster'
 
-export default function Hero({ series }: { series: Series }) {
-  const { myList, toggleMyList, progress } = useAppState()
+export default function Hero({ series }: { series: SeriesSummary }) {
+  const { myList, toggleMyList, progress } = useSession()
   const inList = myList.includes(series.id)
   const resumeEp = progress[series.id]?.episodeNumber ?? 1
 

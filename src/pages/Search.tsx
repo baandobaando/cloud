@@ -1,17 +1,21 @@
 import { Link, useSearchParams } from 'react-router-dom'
-import { CATALOG, GENRES } from '../data/catalog'
+import { GENRES } from '../../shared/types'
+import { useSession } from '../state/Session'
+import { Spinner } from '../components/Feedback'
 import Poster from '../components/Poster'
 
 export default function Search() {
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
   const needle = q.trim().toLowerCase()
+  const { catalog } = useSession()
+  if (!catalog) return <Spinner fullscreen />
 
   const results = needle
-    ? CATALOG.filter((s) =>
+    ? catalog.filter((s) =>
         [s.title, s.tagline, s.synopsis, ...s.genres].some((field) => field.toLowerCase().includes(needle)),
       )
-    : CATALOG
+    : catalog
 
   return (
     <main className="page">

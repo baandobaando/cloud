@@ -1,0 +1,110 @@
+import type {
+  AdminEpisode,
+  AdminSeries,
+  EpisodeView,
+  Genre,
+  PlanId,
+  Rating,
+  SeriesSummary,
+  SubscriptionView,
+} from '../shared/types.ts'
+import { db } from './db.ts'
+
+export interface SeriesRow {
+  id: string
+  title: string
+  tagline: string
+  synopsis: string
+  genres: string
+  year: number
+  rating: string
+  palette: string
+  emoji: string
+  poster_url: string | null
+  is_new: number
+  trending_rank: number | null
+  free_episodes: number
+  published: number
+  created_at: number
+  updated_at: number
+  episode_count: number
+}
+
+export interface EpisodeRow {
+  id: number
+  series_id: string
+  number: number
+  title: string
+  duration_sec: number
+  video_url: string | null
+}
+
+export const SERIES_SELECT = `
+  SELECT s.*, (SELECT COUNT(*) FROM episodes e WHERE e.series_id = s.id) AS episode_count
+  FROM series s`
+
+export function toSummary(r: SeriesRow): SeriesSummary {
+  return {
+    id: r.id,
+    title: r.title,
+    tagline: r.tagline,
+    synopsis: r.synopsis,
+    genres: JSON.parse(r.genres) as Genre[],
+    year: r.year,
+    rating: r.rating as Rating,
+    palette: JSON.parse(r.palette) as [string, string],
+    emoji: r.emoji,
+    posterUrl: r.poster_url,
+    isNew: r.is_new === 1,
+    trendingRank: r.trending_rank,
+    freeEpisodes: r.free_episodes,
+    episodeCount: r.episode_count,
+  }
+}
+
+export function toAdminSeries(r: SeriesRow): AdminSeries {
+  return { ...toSummary(r), published: r.published === 1, createdAt: r.created_at, updatedAt: r.updated_at }
+}
+
+export function toAdminEpisode(r: EpisodeRow): AdminEpisode {
+  return { id: r.id, number: r.number, title: r.title, durationSec: r.duration_sec, videoUrl: r.video_url }
+}
+
+export function toEpisodeView(r: EpisodeRow, unlocked: boolean): EpisodeView {
+  return {
+    id: r.id,
+    number: r.number,
+    title: r.title,
+    durationSec: r.duration_sec,
+    videoUrl: unlocked ? r.video_url : null,
+    locked: !unlocked,
+  }
+}
+
+interface SubscriptionRow {
+  plan: string
+  current_period_end: number | null
+  source: string
+}
+
+export function getSubscription(userId: number): SubscriptionView | null {
+  const row = db.prepare('SELECT plan, current_period_end, source FROM subscriptions WHERE user_id = ?').get(userId) as
+    | SubscriptionRow
+    | undefined
+  if (!row) return null
+  return {
+    plan: row.plan as PlanId,
+    currentPeriodEnd: row.current_period_end,
+    source: row.source as SubscriptionView['source'],
+  }
+}
+
+export function isActive(sub: SubscriptionView | null): boolean {
+  return !!sub && (sub.currentPeriodEnd === null || sub.currentPeriodEnd > Date.now())
+}
+
+/** Whether this user may watch every episode. Admins always can (to review content). */
+export function isEntitled(user: { id: number; isAdmin: boolean } | undefined): boolean {
+  if (!user) return false
+  return user.isAdmin || isActive(getSubscription(user.id))
+}

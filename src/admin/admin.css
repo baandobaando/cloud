@@ -1,0 +1,429 @@
+.admin {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  min-height: 100vh;
+}
+
+.admin__side {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.4rem 1rem;
+  background: #111114;
+  border-right: 1px solid var(--surface-2);
+}
+
+.admin__side .logo {
+  font-size: 1.3rem;
+}
+
+.admin__tag {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: #fff;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+.admin__side nav {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin__side nav a {
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  color: #d4d4d8;
+  font-size: 0.92rem;
+}
+
+.admin__side nav a:hover {
+  background: var(--surface);
+}
+
+.admin__side nav a.active {
+  background: var(--surface-2);
+  color: #fff;
+  font-weight: 700;
+}
+
+.admin__foot {
+  margin-top: auto;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.admin__main {
+  min-width: 0;
+  padding: 2rem clamp(1rem, 3vw, 2.5rem) 4rem;
+}
+
+.admin__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.admin__head h1 {
+  font-size: 1.6rem;
+}
+
+.admin__head h2 {
+  margin: 0;
+}
+
+.admin__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.2rem;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1.2rem;
+}
+
+.stat {
+  padding: 1.1rem 1.2rem;
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.stat__label {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.stat__value {
+  margin: 0.25rem 0;
+  font-size: 1.7rem;
+  font-weight: 900;
+}
+
+.stat__hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 40px;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.7rem;
+  font-size: 0.9rem;
+}
+
+.bar-row strong {
+  text-align: right;
+}
+
+.bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.bar > div {
+  height: 100%;
+  background: var(--red);
+  transition: width 0.3s;
+}
+
+.rank-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rank-list li::marker {
+  color: var(--muted);
+}
+
+.rank-list li {
+  font-size: 0.92rem;
+}
+
+.rank-list li span {
+  float: right;
+  font-size: 0.8rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.toolbar .input {
+  max-width: 320px;
+}
+
+.table--hover tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.table__thumb {
+  width: 48px;
+}
+
+.table__thumb .poster {
+  width: 40px;
+}
+
+.table__thumb .poster__emoji {
+  font-size: 1.1rem;
+}
+
+.table__title {
+  font-weight: 700;
+}
+
+.row-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.icon-btn--small {
+  width: 30px;
+  height: 30px;
+  font-size: 0.9rem;
+  background: var(--surface-2);
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pill--tiny {
+  padding: 0 0.3rem;
+  font-size: 0.65rem;
+}
+
+/* ---------- Editor ---------- */
+
+.editor {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1.2rem;
+  align-items: start;
+}
+
+.editor__fields {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field > span,
+.field__label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.field .chips {
+  margin: 0;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+
+textarea.input {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.input--color {
+  height: 44px;
+  padding: 4px;
+}
+
+.input--tiny {
+  width: 70px;
+  padding: 0.4rem 0.5rem;
+}
+
+.input--small {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.input--bare {
+  border-color: transparent;
+  background: transparent;
+  padding: 0.35rem 0.5rem;
+}
+
+.input--bare:hover {
+  border-color: #3f3f46;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.editor__save {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.5rem;
+}
+
+.editor__art {
+  display: grid;
+  gap: 0.8rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.editor__poster {
+  width: 180px;
+  margin: 0 auto;
+}
+
+.ep-video {
+  white-space: nowrap;
+}
+
+.ep-video .status {
+  margin-right: 0.3rem;
+}
+
+.ep-video .bar {
+  width: 160px;
+}
+
+.inline-form {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.inline-form .input {
+  min-width: 240px;
+}
+
+.jobs {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.job {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 40px;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.85rem;
+}
+
+.job__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Modal ---------- */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.modal__card {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 1rem;
+  padding: 1.6rem;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+@media (max-width: 900px) {
+  .admin {
+    grid-template-columns: 1fr;
+  }
+
+  .admin__side {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--surface-2);
+  }
+
+  .admin__side nav {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .admin__foot {
+    margin: 0 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  .admin__foot .muted {
+    display: none;
+  }
+
+  .editor {
+    grid-template-columns: 1fr;
+  }
+
+  .editor__art {
+    position: static;
+  }
+
+  .admin__main .table {
+    display: block;
+    overflow-x: auto;
+  }
+}

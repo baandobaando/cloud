@@ -1,34 +1,74 @@
-import { useState } from 'react'
-import { useAppState } from '../state/AppState'
+import { useState, type FormEvent } from 'react'
+import type { Profile } from '../../shared/types'
+import { api, errorMessage } from '../api'
+import { useSession } from '../state/Session'
+import { useToast } from '../components/Toast'
+
+const MAX_PROFILES = 5
 
 export default function ProfileGate() {
-  const { profiles, selectProfile, addProfile } = useAppState()
+  const { me, selectProfile, refreshMe } = useSession()
+  const toast = useToast()
+  const [managing, setManaging] = useState(false)
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
+  const profiles = me?.profiles ?? []
 
-  const submit = (e: React.FormEvent) => {
+  const add = async (e: FormEvent) => {
     e.preventDefault()
-    const trimmed = name.trim()
-    if (!trimmed) return
-    addProfile(trimmed)
-    setName('')
-    setAdding(false)
+    if (!name.trim()) return
+    try {
+      await api.post<Profile>('/profiles', { name: name.trim() })
+      await refreshMe()
+      setName('')
+      setAdding(false)
+    } catch (err) {
+      toast(errorMessage(err), 'error')
+    }
+  }
+
+  const rename = async (p: Profile) => {
+    const next = window.prompt('Profile name', p.name)?.trim()
+    if (!next || next === p.name) return
+    try {
+      await api.patch(`/profiles/${p.id}`, { name: next })
+      await refreshMe()
+    } catch (err) {
+      toast(errorMessage(err), 'error')
+    }
+  }
+
+  const remove = async (p: Profile) => {
+    if (!window.confirm(`Delete the "${p.name}" profile? Its list and watch history will be lost.`)) return
+    try {
+      await api.del(`/profiles/${p.id}`)
+      await refreshMe()
+    } catch (err) {
+      toast(errorMessage(err), 'error')
+    }
   }
 
   return (
     <div className="gate">
       <div className="logo logo--big">REELFLIX</div>
-      <h1>Who's watching?</h1>
+      <h1>{managing ? 'Manage profiles' : "Who's watching?"}</h1>
       <div className="gate__profiles">
         {profiles.map((p) => (
-          <button key={p.id} className="gate__profile" onClick={() => selectProfile(p.id)}>
-            <span className="gate__avatar" style={{ background: p.color }}>
-              {p.name[0]}
-            </span>
-            {p.name}
-          </button>
+          <div key={p.id} className="gate__item">
+            <button className="gate__profile" onClick={() => (managing ? rename(p) : selectProfile(p.id))}>
+              <span className="gate__avatar" style={{ background: p.color }}>
+                {managing ? '✎' : p.name[0]}
+              </span>
+              {p.name}
+            </button>
+            {managing && profiles.length > 1 && (
+              <button className="btn btn--link small" onClick={() => remove(p)}>
+                Delete
+              </button>
+            )}
+          </div>
         ))}
-        {profiles.length < 5 && (
+        {profiles.length < MAX_PROFILES && (
           <button className="gate__profile" onClick={() => setAdding(true)}>
             <span className="gate__avatar gate__avatar--add">+</span>
             Add Profile
@@ -36,7 +76,7 @@ export default function ProfileGate() {
         )}
       </div>
       {adding && (
-        <form className="gate__form" onSubmit={submit}>
+        <form className="gate__form" onSubmit={add}>
           <input autoFocus placeholder="Name" value={name} maxLength={16} onChange={(e) => setName(e.target.value)} />
           <button className="btn btn--white" type="submit">
             Save
@@ -46,6 +86,9 @@ export default function ProfileGate() {
           </button>
         </form>
       )}
+      <button className="btn btn--outline" onClick={() => setManaging((m) => !m)}>
+        {managing ? 'Done' : 'Manage Profiles'}
+      </button>
     </div>
   )
 }

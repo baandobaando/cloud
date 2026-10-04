@@ -1,19 +1,19 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import type { Series } from '../data/catalog'
-import { useAppState } from '../state/AppState'
+import type { SeriesSummary } from '../../shared/types'
+import { useSession } from '../state/Session'
 import Poster from './Poster'
 
 interface Props {
   title: string
-  items: Series[]
+  items: SeriesSummary[]
   ranked?: boolean
   showProgress?: boolean
 }
 
 export default function Row({ title, items, ranked, showProgress }: Props) {
   const scroller = useRef<HTMLDivElement>(null)
-  const { progress } = useAppState()
+  const { progress } = useSession()
 
   if (items.length === 0) return null
 
@@ -32,7 +32,7 @@ export default function Row({ title, items, ranked, showProgress }: Props) {
         <div className="row__scroller" ref={scroller}>
           {items.map((s, i) => {
             const p = progress[s.id]
-            const pct = p ? Math.round((p.episodeNumber / s.episodes.length) * 100) : 0
+            const pct = p ? Math.round((p.episodeNumber / Math.max(s.episodeCount, 1)) * 100) : 0
             const to = showProgress && p ? `/watch/${s.id}/${p.episodeNumber}` : `/title/${s.id}`
             return (
               <Link key={s.id} to={to} className={`card ${ranked ? 'card--ranked' : ''}`}>

@@ -1,37 +1,27 @@
-export type Genre =
-  | 'Billionaire Romance'
-  | 'Revenge'
-  | 'Werewolf & Fantasy'
-  | 'Mafia'
-  | 'Hidden Identity'
-  | 'Family Secrets'
+// Starter catalog inserted into an empty database on first run.
+import type { Genre, Rating } from '../shared/types.ts'
 
-export interface Episode {
-  id: string
+interface SeedEpisode {
   number: number
   title: string
   durationSec: number
   videoUrl: string
 }
 
-export interface Series {
+interface SeedSeries {
   id: string
   title: string
   tagline: string
   synopsis: string
   genres: Genre[]
   year: number
-  rating: 'TV-14' | 'TV-MA' | 'TV-PG'
-  /** Two colors used to paint the generated poster art. */
+  rating: Rating
   palette: [string, string]
   emoji: string
   isNew?: boolean
   trendingRank?: number
-  episodes: Episode[]
+  episodes: SeedEpisode[]
 }
-
-/** Episodes 1..FREE_EPISODES are free; the rest need a subscription. */
-export const FREE_EPISODES = 5
 
 // Public sample clips stand in for real episode footage.
 const SAMPLE_VIDEOS = [
@@ -63,9 +53,8 @@ const EPISODE_BEATS = [
   'Checkmate',
 ]
 
-function makeEpisodes(seriesId: string, count: number): Episode[] {
+function makeEpisodes(count: number): SeedEpisode[] {
   return Array.from({ length: count }, (_, i) => ({
-    id: `${seriesId}-e${i + 1}`,
     number: i + 1,
     title: EPISODE_BEATS[i % EPISODE_BEATS.length],
     durationSec: 70 + ((i * 37) % 60),
@@ -73,9 +62,9 @@ function makeEpisodes(seriesId: string, count: number): Episode[] {
   }))
 }
 
-type SeriesSeed = Omit<Series, 'episodes'> & { episodeCount: number }
 
-const SEEDS: SeriesSeed[] = [
+
+const SEEDS: (Omit<SeedSeries, 'episodes'> & { episodeCount: number })[] = [
   {
     id: 'ceo-secret-wife',
     title: "The CEO's Secret Wife",
@@ -243,37 +232,7 @@ const SEEDS: SeriesSeed[] = [
   },
 ]
 
-export const CATALOG: Series[] = SEEDS.map(({ episodeCount, ...seed }) => ({
+export const SEED_SERIES: SeedSeries[] = SEEDS.map(({ episodeCount, ...seed }) => ({
   ...seed,
-  episodes: makeEpisodes(seed.id, episodeCount),
+  episodes: makeEpisodes(episodeCount),
 }))
-
-export const GENRES: Genre[] = [
-  'Billionaire Romance',
-  'Revenge',
-  'Werewolf & Fantasy',
-  'Mafia',
-  'Hidden Identity',
-  'Family Secrets',
-]
-
-export function getSeries(id: string): Series | undefined {
-  return CATALOG.find((s) => s.id === id)
-}
-
-export function isEpisodeFree(episodeNumber: number): boolean {
-  return episodeNumber <= FREE_EPISODES
-}
-
-export interface Plan {
-  id: 'basic' | 'standard' | 'premium'
-  name: string
-  price: string
-  perks: string[]
-}
-
-export const PLANS: Plan[] = [
-  { id: 'basic', name: 'Basic', price: '$4.99/mo', perks: ['Every episode, every series', 'With ads', '1 screen'] },
-  { id: 'standard', name: 'Standard', price: '$7.99/mo', perks: ['Every episode, every series', 'No ads', '2 screens', 'Downloads'] },
-  { id: 'premium', name: 'Premium', price: '$11.99/mo', perks: ['Everything in Standard', '4 screens', 'Early access to new series'] },
-]

@@ -1,20 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { FREE_EPISODES, getSeries, isEpisodeFree, type Episode, type Series } from '../data/catalog'
-import { useAppState } from '../state/AppState'
+import type { EpisodeView as Episode, SeriesDetail as Series } from '../../shared/types'
+import { useSession } from '../state/Session'
+import { useApi } from '../useApi'
 import Poster from '../components/Poster'
+import { ErrorState, Spinner } from '../components/Feedback'
 
 /** Vertical, swipeable episode feed — one full-screen episode per slide. */
 export default function Watch() {
   const { seriesId = '', episode = '1' } = useParams()
-  const series = getSeries(seriesId)
-  if (!series) return <NotFound />
+  const { data: series, error, reload } = useApi<Series>(`/series/${encodeURIComponent(seriesId)}`)
+  if (error) return <NotFound message={error} onRetry={reload} />
+  if (!series || series.id !== seriesId) return <div className="watch"><Spinner fullscreen /></div>
+  if (series.episodes.length === 0) return <NotFound message="This series has no episodes yet." />
   return <Feed key={series.id} series={series} startEpisode={clamp(Number(episode) || 1, 1, series.episodes.length)} />
 }
 
 function Feed({ series, startEpisode: requestedEpisode }: { series: Series; startEpisode: number }) {
   const navigate = useNavigate()
-  const { plan, progress, saveProgress } = useAppState()
+  const { progress, saveProgress } = useSession()
   // The URL is rewritten as you swipe, so pin where this viewing session started.
   const [startEpisode] = useState(requestedEpisode)
   const [resumeAt] = useState(() =>
@@ -26,7 +30,7 @@ function Feed({ series, startEpisode: requestedEpisode }: { series: Series; star
   const feedRef = useRef<HTMLDivElement>(null)
   const slideRefs = useRef<(HTMLDivElement | null)[]>([])
 
-  const canWatch = (n: number) => plan !== null || isEpisodeFree(n)
+  const canWatch = (n: number) => series.episodes[n - 1]?.locked === false
 
   const goTo = useCallback((n: number, smooth = true) => {
     slideRefs.current[n - 1]?.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant', block: 'start' })
@@ -84,7 +88,13 @@ function Feed({ series, startEpisode: requestedEpisode }: { series: Series; star
             }}
           >
             {Math.abs(ep.number - current) <= 1 &&
-              (canWatch(ep.number) ? (
+              (!canWatch(ep.number) ? (
+                <Paywall series={series} episode={ep} />
+              ) : !ep.videoUrl ? (
+                <div className="player player--empty">
+                  <p>Episode {ep.number} is coming soon.</p>
+                </div>
+              ) : (
                 <EpisodePlayer
                   episode={ep}
                   active={ep.number === current}
@@ -94,8 +104,6 @@ function Feed({ series, startEpisode: requestedEpisode }: { series: Series; star
                   onProgress={(pos) => saveProgress(series.id, ep.number, pos)}
                   onEnded={() => ep.number < series.episodes.length && goTo(ep.number + 1)}
                 />
-              ) : (
-                <Paywall series={series} episode={ep} />
               ))}
           </div>
         ))}
@@ -198,7 +206,7 @@ function EpisodePlayer({ episode, active, startAt, muted, onMutedChange, onProgr
     <div className="player" onClick={togglePlay}>
       <video
         ref={videoRef}
-        src={episode.videoUrl}
+        src={episode.videoUrl ?? undefined}
         playsInline
         muted={muted}
         preload="auto"
@@ -235,10 +243,11 @@ function Paywall({ series, episode }: { series: Series; episode: Episode }) {
         <div className="paywall__lock">🔒</div>
         <h2>Episode {episode.number} is for members</h2>
         <p>
-          You watched the first {FREE_EPISODES} episodes free. Subscribe once and watch all {series.episodes.length}{' '}
-          episodes of <em>{series.title}</em> and every other series, with no coins and no per-episode unlocks.
+          {series.freeEpisodes > 0 ? `You watched the first ${series.freeEpisodes} free. ` : ''}Become a member to watch all{' '}
+          {series.episodes.length} episodes of <em>{series.title}</em> and every other series, with no coins and no
+          per-episode unlocks. Pay with crypto.
         </p>
-        <Link to="/plans" state={{ returnTo: `/watch/${series.id}/${episode.number}` }} className="btn btn--red btn--block">
+        <Link to={`/plans?return=${encodeURIComponent(`/watch/${series.id}/${episode.number}`)}`} className="btn btn--red btn--block">
           See Plans
         </Link>
       </div>
@@ -281,13 +290,14 @@ function EpisodeDrawer({ series, current, canWatch, onPick, onClose }: DrawerPro
   )
 }
 
-function NotFound() {
+function NotFound({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className="empty">
-      <p>That series doesn't exist.</p>
-      <Link to="/" className="btn btn--white">
-        Back to Home
-      </Link>
+      <ErrorState message={message} onRetry={onRetry}>
+        <Link to="/" className="btn btn--grey">
+          Back to Home
+        </Link>
+      </ErrorState>
     </div>
   )
 }

@@ -1,9 +1,14 @@
 import { Link } from 'react-router-dom'
-import { CATALOG } from '../data/catalog'
+import { useSession } from '../state/Session'
 import Poster from '../components/Poster'
+import { Spinner } from '../components/Feedback'
 
 export default function NewAndHot() {
-  const items = [...CATALOG].sort((a, b) => Number(!!b.isNew) - Number(!!a.isNew) || (a.trendingRank ?? 99) - (b.trendingRank ?? 99))
+  const { catalog } = useSession()
+  if (!catalog) return <Spinner fullscreen />
+  const items = [...catalog].sort(
+    (a, b) => Number(b.isNew) - Number(a.isNew) || (a.trendingRank ?? 99) - (b.trendingRank ?? 99),
+  )
   return (
     <main className="page">
       <h1 className="page__heading">New &amp; Hot</h1>
@@ -18,7 +23,9 @@ export default function NewAndHot() {
               </div>
               <h2>{s.title}</h2>
               <p>{s.synopsis}</p>
-              <span className="muted small">{s.genres.join(' · ')} · {s.episodes.length} episodes</span>
+              <span className="muted small">
+                {s.genres.join(' · ')} · {s.episodeCount} episodes
+              </span>
             </div>
           </Link>
         ))}
