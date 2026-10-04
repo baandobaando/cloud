@@ -25,6 +25,15 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      # Bunny Stream (videos)
+      - key: BUNNY_LIBRARY_ID
+        value: "769632"
+      - key: BUNNY_CDN_HOST
+        value: vz-6d32ecb2-8a0.b-cdn.net
+      - key: BUNNY_LIBRARY_KEY
+        sync: false
+      - key: BUNNY_TOKEN_KEY
+        sync: false
       # Payment keys — optional at first; add them later under Environment.
       - key: NOWPAYMENTS_API_KEY
         sync: false
