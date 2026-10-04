@@ -30,6 +30,9 @@ app.use('/api', (_req, res, next) => {
   next()
 })
 
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true })
+})
 app.use('/api/auth', authRouter)
 app.use('/api', accountRouter)
 app.use('/api', catalogRouter)

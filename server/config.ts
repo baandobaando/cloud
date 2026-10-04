@@ -7,7 +7,13 @@ export const isProduction = env.NODE_ENV === 'production'
 export const config = {
   port: Number(env.PORT ?? 3001),
   /** Public URL of the app, used for payment redirect and webhook URLs. */
-  appUrl: (env.APP_URL ?? (isProduction ? '' : 'http://localhost:5173')).replace(/\/$/, ''),
+  // Falls back to the URL that Render / Railway provide automatically.
+  appUrl: (
+    env.APP_URL ??
+    env.RENDER_EXTERNAL_URL ??
+    (env.RAILWAY_PUBLIC_DOMAIN ? `https://${env.RAILWAY_PUBLIC_DOMAIN}` : undefined) ??
+    (isProduction ? '' : 'http://localhost:5173')
+  ).replace(/\/$/, ''),
   dataDir: path.resolve(env.DATA_DIR ?? 'data'),
   nowpayments: {
     apiKey: env.NOWPAYMENTS_API_KEY ?? '',
