@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import type { AdminOrder, AdminOrderPage, OrderStatus } from '../../shared/types'
+import type { AdminOrder, AdminOrderPage, AdminPaymentsStatus, OrderStatus } from '../../shared/types'
 import Icon from '../components/Icon'
 import { api, errorMessage } from '../api'
 import { useApi } from '../useApi'
@@ -80,6 +80,8 @@ export default function Orders() {
           </button>
         </div>
       </div>
+
+      <PaymentsHealth />
 
       <div className="kpis kpis--5">
         <Kpi label="Revenue" value={money(s.revenueCents)} foot={RANGES.find((r) => r.id === range)?.label} tone="accent" />
@@ -169,6 +171,38 @@ export default function Orders() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+/** Warns when customers can't check out, e.g. Stripe hasn't activated card payments on the account. */
+function PaymentsHealth() {
+  const [recheck, setRecheck] = useState(0)
+  const { data, loading } = useApi<AdminPaymentsStatus>(`/admin/payments/status${recheck ? `?recheck=1&n=${recheck}` : ''}`)
+  if (!data) return null
+  const s = data.stripe
+  if (s.ready) {
+    return (
+      <p className="muted small pay-health pay-health--ok">
+        <Icon name="check" size={14} /> Stripe checkout is live{s.accountName ? ` (${s.accountName})` : ''}.
+      </p>
+    )
+  }
+  return (
+    <div className="notice pay-health" role="status">
+      <strong>Customers can't pay right now.</strong> {s.problem}{' '}
+      {s.keys && s.webhook && (
+        <>
+          Turn on card payments at{' '}
+          <a href="https://dashboard.stripe.com/settings/payment_methods" target="_blank" rel="noreferrer">
+            Stripe → Settings → Payment methods
+          </a>{' '}
+          and finish any steps Stripe lists on its dashboard home. Checkout appears on the site automatically within 10 minutes.
+        </>
+      )}
+      <button className="btn btn--secondary btn--small" onClick={() => setRecheck((n) => n + 1)} disabled={loading}>
+        <Icon name="refresh" size={14} className={loading ? 'spin' : ''} /> Check again
+      </button>
     </div>
   )
 }

@@ -1622,3 +1622,9 @@ textarea.input {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Orders: payment setup health */
+.pay-health { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 16px; }
+.pay-health .btn { margin-left: auto; }
+.pay-health--ok { color: var(--text-2); }
+.pay-health--ok svg { color: #3ecf8e; }

@@ -16,7 +16,7 @@ process.env.BTCPAY_WEBHOOK_SECRET = 'btc_webhook_secret'
 
 const { db } = await import('./db.ts')
 const { fulfillOrder } = await import('./billing.ts')
-const { stripeProvider } = await import('./payments/stripe.ts')
+const { stripeProvider, checkStripeAccount } = await import('./payments/stripe.ts')
 const { btcpay } = await import('./payments/btcpay.ts')
 const { WebhookSignatureError } = await import('./payments/types.ts')
 const { getSubscription } = await import('./models.ts')
@@ -104,6 +104,44 @@ describe('Stripe webhook', () => {
       assert.equal(sent!.get('line_items[0][price_data][unit_amount]'), '2697')
       assert.equal(sent!.get('cancel_url'), 'https://x/plans')
       assert.equal(sent!.get('customer_email'), 'a@b.co')
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  })
+})
+
+describe('Stripe account check', () => {
+  const withAccount = async (account: Record<string, unknown>) => {
+    const realFetch = globalThis.fetch
+    globalThis.fetch = (async () => new Response(JSON.stringify(account), { status: 200 })) as typeof fetch
+    try {
+      return await checkStripeAccount()
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  }
+
+  test('hides checkout while Stripe has charges or card payments off, and shows it once enabled', async () => {
+    assert.equal(stripeProvider.isConfigured(), true, 'available before the first check')
+    const off = await withAccount({ charges_enabled: false, capabilities: { card_payments: 'inactive' }, requirements: { currently_due: [] } })
+    assert.equal(off?.ready, false)
+    assert.match(off!.problem!, /not enabled charges/)
+    assert.equal(stripeProvider.isConfigured(), false)
+
+    const inactiveCards = await withAccount({ charges_enabled: true, capabilities: { card_payments: 'pending' } })
+    assert.match(inactiveCards!.problem!, /Card payments are pending/)
+    assert.equal(stripeProvider.isConfigured(), false)
+
+    const on = await withAccount({ charges_enabled: true, capabilities: { card_payments: 'active' }, business_profile: { name: 'BingeTube' } })
+    assert.deepEqual([on?.ready, on?.accountName], [true, 'BingeTube'])
+    assert.equal(stripeProvider.isConfigured(), true)
+  })
+
+  test('keeps the last result if Stripe cannot be reached', async () => {
+    const realFetch = globalThis.fetch
+    globalThis.fetch = (async () => { throw new Error('network down') }) as typeof fetch
+    try {
+      assert.equal((await checkStripeAccount())?.ready, true)
     } finally {
       globalThis.fetch = realFetch
     }

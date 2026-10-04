@@ -11,6 +11,7 @@ import {
   MEMBERSHIP,
   RATINGS,
   getPlan,
+  type AdminPaymentsStatus,
   type AdminSeriesDetail,
   type AdminStats,
   type Genre,
@@ -21,6 +22,7 @@ import { requireAdmin } from './auth.ts'
 import { config } from './config.ts'
 import { BUNNY_PREFIX, bunnyConfigured, listCollections } from './bunny.ts'
 import { getLastSync, importBunnyNow } from './bunnyImport.ts'
+import { checkStripeAccount, getStripeAccountStatus } from './payments/stripe.ts'
 import { mediaDirs } from './catalog.ts'
 import { db, transaction } from './db.ts'
 import { HttpError, bool, int, str } from './http.ts'
@@ -201,6 +203,32 @@ adminRouter.get('/stats', (_req, res) => {
     ).map((p) => ({ id: p.id, email: p.email, amountCents: p.amount_cents, plan: p.plan, provider: p.provider, createdAt: p.created_at })),
   }
   res.json(stats)
+})
+
+/** Payment setup health for the Orders page. `?recheck=1` asks Stripe again instead of using the cached result. */
+adminRouter.get('/payments/status', async (req, res) => {
+  const keys = Boolean(config.stripe.secretKey)
+  const webhook = Boolean(config.stripe.webhookSecret)
+  let status = getStripeAccountStatus()
+  if (keys && (req.query.recheck === '1' || !status || Date.now() - status.checkedAt > 60_000)) status = await checkStripeAccount()
+  const body: AdminPaymentsStatus = {
+    stripe: {
+      keys,
+      webhook,
+      ready: keys && webhook && status?.ready === true,
+      problem: !keys
+        ? 'STRIPE_SECRET_KEY is not set.'
+        : !webhook
+          ? 'STRIPE_WEBHOOK_SECRET is not set.'
+          : status
+            ? status.problem
+            : "Couldn't reach Stripe to check the account.",
+      accountName: status?.accountName ?? null,
+      checkedAt: status?.checkedAt ?? null,
+      webhookUrl: `${config.appUrl}/api/billing/webhooks/stripe`,
+    },
+  }
+  res.json(body)
 })
 
 adminRouter.get('/analytics', (req, res) => {

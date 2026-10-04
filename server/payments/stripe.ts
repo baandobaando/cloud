@@ -35,6 +35,62 @@ async function stripe<T>(path: string, form?: Record<string, string>): Promise<T
   return data
 }
 
+/**
+ * Whether the Stripe account can actually take payments right now. Null until the first check (or if Stripe
+ * couldn't be reached), in which case checkout stays available rather than hiding it on a network blip.
+ */
+export interface StripeAccountStatus {
+  checkedAt: number
+  ready: boolean
+  /** Human-readable reason when not ready. */
+  problem: string | null
+  accountName: string | null
+}
+let accountStatus: StripeAccountStatus | null = null
+export const getStripeAccountStatus = () => accountStatus
+
+const ACCOUNT_CHECK_MS = 10 * 60 * 1000
+
+export async function checkStripeAccount(): Promise<StripeAccountStatus | null> {
+  if (!config.stripe.secretKey) return null
+  try {
+    const a = await stripe<{
+      charges_enabled?: boolean
+      business_profile?: { name?: string | null }
+      settings?: { dashboard?: { display_name?: string | null } }
+      capabilities?: Record<string, string>
+      requirements?: { disabled_reason?: string | null; currently_due?: string[] } | null
+    }>('/account')
+    const card = a.capabilities?.card_payments
+    let problem: string | null = null
+    if (!a.charges_enabled) {
+      problem = a.requirements?.disabled_reason
+        ? `Stripe has disabled charges on this account (${a.requirements.disabled_reason}).`
+        : 'Stripe has not enabled charges on this account yet.'
+      if (a.requirements?.currently_due?.length) problem += ` Stripe is asking for: ${a.requirements.currently_due.join(', ')}.`
+    } else if (card && card !== 'active') {
+      problem = `Card payments are ${card} on this Stripe account.`
+    }
+    accountStatus = {
+      checkedAt: Date.now(),
+      ready: problem === null,
+      problem,
+      accountName: a.settings?.dashboard?.display_name ?? a.business_profile?.name ?? null,
+    }
+    if (problem) console.warn(`[stripe] Checkout hidden: ${problem}`)
+  } catch (err) {
+    console.warn('[stripe] Account check failed', err)
+  }
+  return accountStatus
+}
+
+/** Checks the account on startup and every 10 minutes so checkout appears as soon as Stripe enables it. */
+export function startStripeAccountMonitor() {
+  if (!config.stripe.secretKey) return
+  void checkStripeAccount()
+  setInterval(() => void checkStripeAccount(), ACCOUNT_CHECK_MS).unref()
+}
+
 function sessionStatus(s: Session): OrderStatus {
   if (s.status === 'expired') return 'expired'
   if (s.status === 'complete') return s.payment_status === 'unpaid' ? 'confirming' : 'paid'
@@ -67,7 +123,7 @@ export const stripeProvider: PaymentProvider = {
     description: 'Secure checkout by Stripe',
   },
 
-  isConfigured: () => Boolean(config.stripe.secretKey && config.stripe.webhookSecret),
+  isConfigured: () => Boolean(config.stripe.secretKey && config.stripe.webhookSecret) && accountStatus?.ready !== false,
 
   async createInvoice({ orderId, amountCents, description, returnUrl, cancelUrl, email }) {
     const form: Record<string, string> = {
@@ -83,7 +139,14 @@ export const stripeProvider: PaymentProvider = {
       'line_items[0][price_data][product_data][name]': description,
     }
     if (email) form.customer_email = email
-    const s = await stripe<Session>('/checkout/sessions', form)
+    let s: Session
+    try {
+      s = await stripe<Session>('/checkout/sessions', form)
+    } catch (err) {
+      // Usually means the account lost (or never had) payment methods: re-check so checkout hides itself.
+      void checkStripeAccount()
+      throw err
+    }
     if (!s.id || !s.url) throw new Error('Stripe returned a session without a checkout URL')
     return { invoiceId: s.id, checkoutUrl: s.url }
   },

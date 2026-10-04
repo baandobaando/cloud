@@ -335,3 +335,16 @@ export interface SeriesInput {
   freeEpisodes: number
   published: boolean
 }
+
+export interface AdminPaymentsStatus {
+  stripe: {
+    keys: boolean
+    webhook: boolean
+    /** True when checkout is being offered to customers. */
+    ready: boolean
+    problem: string | null
+    accountName: string | null
+    checkedAt: number | null
+    webhookUrl: string
+  }
+}

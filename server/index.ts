@@ -7,6 +7,7 @@ import { oauthRouter } from './oauth.ts'
 import { authRouter, ensureAdmin, loadUser, pruneExpiredSessions, sameOrigin } from './auth.ts'
 import { billingRouter } from './billing.ts'
 import { startBunnyAutoImport } from './bunnyImport.ts'
+import { startStripeAccountMonitor } from './payments/stripe.ts'
 import { catalogRouter, mediaRouter } from './catalog.ts'
 import { config, isProduction } from './config.ts'
 import { HttpError, errorHandler } from './http.ts'
@@ -87,4 +88,5 @@ setInterval(pruneExpiredSessions, 6 * 60 * 60 * 1000).unref()
 app.listen(config.port, () => {
   console.log(`[server] BingeTube API listening on http://localhost:${config.port}`)
   startBunnyAutoImport()
+  startStripeAccountMonitor()
 })
