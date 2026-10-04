@@ -37,8 +37,9 @@ interface PendingLogin {
   exp: number
 }
 
+/** Only same-site paths; "//x" and "/\\x" are treated as other hosts by browsers. */
 function safeNext(next: unknown): string {
-  return typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : '/'
+  return typeof next === 'string' && /^\/(?![/\\])/.test(next) && !next.includes('\\') ? next : '/'
 }
 
 /** Apple posts the callback cross-site, so its state cookie must be SameSite=None (which requires HTTPS). */

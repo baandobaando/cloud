@@ -1263,3 +1263,255 @@ textarea.input {
   justify-content: center;
   min-height: 32px;
 }
+
+/* ---------- Users / Orders / Activity ---------- */
+
+.kpis--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.is-clickable {
+  cursor: pointer;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.status--comp {
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.user-cell__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff2e4d, #ff7a3d);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.user-cell__avatar--lg {
+  width: 48px;
+  height: 48px;
+  font-size: 1.2rem;
+}
+
+.user-cell__avatar--sm {
+  width: 24px;
+  height: 24px;
+  font-size: 0.72rem;
+}
+
+.users-table td {
+  vertical-align: middle;
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pager__btns {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Side panel */
+.side-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  animation: side-panel-fade 0.2s ease both;
+}
+
+.side-panel__panel {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 100vw);
+  height: 100%;
+  background: var(--bg-raise);
+  border-left: 1px solid var(--line);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+  outline: none;
+  animation: side-panel-in 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.side-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.4rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.side-panel__title h2 {
+  font-size: 1.3rem;
+}
+
+.side-panel__title .status {
+  margin-top: 0.4rem;
+  display: inline-block;
+}
+
+.side-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.2rem 1.4rem 2rem;
+  display: grid;
+  align-content: start;
+  gap: 1.4rem;
+}
+
+.side-panel__stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.side-panel__stats > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.side-panel__stats strong {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.side-panel__stats span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.side-panel__section {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.side-panel__section h3 {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.member-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.member-card p {
+  margin-top: 0.3rem;
+}
+
+.grant-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 0.45rem 1rem;
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mini-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mini-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.7rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.86rem;
+}
+
+.mini-list li > :last-child {
+  margin-left: auto;
+}
+
+@keyframes side-panel-in {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+
+@keyframes side-panel-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 1200px) {
+  .kpis--5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .kpis--5 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .side-panel__stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .facts {
+    grid-template-columns: 1fr;
+  }
+}

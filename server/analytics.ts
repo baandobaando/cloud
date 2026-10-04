@@ -122,7 +122,7 @@ export function buildAnalytics(rangeId: string, now = Date.now()): AdminAnalytic
     .sort((a, b) => b.views - a.views)
     .slice(0, 8)
 
-  const activeSubs = all<{ plan: string }>('SELECT plan FROM subscriptions WHERE current_period_end IS NULL OR current_period_end > ?', now)
+  const activeSubs = all<{ plan: string; source: string }>('SELECT plan, source FROM subscriptions WHERE current_period_end IS NULL OR current_period_end > ?', now)
 
   return {
     range: range.id as AnalyticsRange,
@@ -141,7 +141,8 @@ export function buildAnalytics(rangeId: string, now = Date.now()): AdminAnalytic
     totals: {
       users: one('SELECT COUNT(*) AS n FROM users'),
       activeMembers: activeSubs.length,
-      mrrCents: activeSubs.reduce((n, s) => n + (getPlan(s.plan) ?? MEMBERSHIP).priceCents, 0),
+      // Run-rate counts paying members only; complimentary and test access don't bring in money.
+      mrrCents: activeSubs.filter((s) => s.source === 'crypto').reduce((n, s) => n + (getPlan(s.plan) ?? MEMBERSHIP).priceCents, 0),
       seriesPublished: one('SELECT COUNT(*) AS n FROM series WHERE published = 1'),
       seriesDraft: one('SELECT COUNT(*) AS n FROM series WHERE published = 0'),
       episodes: one('SELECT COUNT(*) AS n FROM episodes'),

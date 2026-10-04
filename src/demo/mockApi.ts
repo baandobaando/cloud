@@ -12,7 +12,8 @@ import {
   type AdminSeries,
   type AdminSeriesDetail,
   type AdminStats,
-  type AdminUser,
+  type AdminOrder,
+  type AdminUserRow,
   type Genre,
   type Me,
   type OrderStatus,
@@ -369,8 +370,39 @@ function fulfill(db: DB, order: Order, coin: string | null) {
   db.payments.push({ id: newId(db), userId: order.userId, amountCents: order.amountCents, plan: order.plan, provider: order.provider, createdAt: now })
 }
 
-function adminUser(db: DB, u: User): AdminUser {
-  return { id: u.id, email: u.email, name: u.name, isAdmin: u.isAdmin, createdAt: u.createdAt, subscription: db.subs[u.id] ?? null }
+function adminUser(db: DB, u: User): AdminUserRow {
+  const paid = db.orders.filter((o) => o.userId === u.id && o.status === 'paid')
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    isAdmin: u.isAdmin,
+    createdAt: u.createdAt,
+    subscription: db.subs[u.id] ?? null,
+    lastWatchedAt: null,
+    paidOrders: paid.length,
+    totalSpentCents: paid.reduce((n, o) => n + o.amountCents, 0),
+    views30d: 0,
+    signInMethods: ['password'],
+  }
+}
+
+function adminOrder(db: DB, o: DB['orders'][number]): AdminOrder {
+  return {
+    id: o.id,
+    userId: o.userId,
+    email: db.users.find((u) => u.id === o.userId)?.email ?? '(deleted user)',
+    plan: o.plan,
+    months: o.months,
+    amountCents: o.amountCents,
+    provider: o.provider,
+    providerInvoiceId: o.provider === 'test' ? null : `inv_${o.id.slice(0, 10)}`,
+    checkoutUrl: null,
+    status: orderView(o).status,
+    payCurrency: null,
+    createdAt: o.createdAt,
+    paidAt: o.paidAt ?? null,
+  }
 }
 
 function createUser(db: DB, email: string, password: string, name: string): User {
@@ -697,12 +729,64 @@ on('GET', '/admin/users', (db) => {
   const params = new URLSearchParams(lastQuery)
   const q = (params.get('q') ?? '').toLowerCase()
   const filter = params.get('filter')
-  return [...db.users]
+  const now = Date.now()
+  const state = (u: User) => {
+    const sub = db.subs[u.id]
+    if (!sub) return 'free'
+    if (sub.currentPeriodEnd !== null && sub.currentPeriodEnd <= now) return 'expired'
+    return sub.source === 'comp' ? 'comp' : 'paid'
+  }
+  const users = [...db.users]
     .sort((a, b) => b.createdAt - a.createdAt)
     .filter((u) => !q || u.email.includes(q) || u.name.toLowerCase().includes(q))
-    .filter((u) => (filter === 'subscribers' ? isActive(db.subs[u.id]) : filter === 'admins' ? u.isAdmin : true))
+    .filter((u) =>
+      filter === 'members' ? ['paid', 'comp'].includes(state(u)) : filter === 'comp' || filter === 'expired' || filter === 'free' ? state(u) === filter : filter === 'admins' ? u.isAdmin : true,
+    )
     .map((u) => adminUser(db, u))
+  const states = db.users.map(state)
+  return {
+    users,
+    total: users.length,
+    page: 1,
+    pageSize: 50,
+    stats: {
+      total: db.users.length,
+      members: states.filter((x) => x === 'paid' || x === 'comp').length,
+      paying: states.filter((x) => x === 'paid').length,
+      comp: states.filter((x) => x === 'comp').length,
+      expired: states.filter((x) => x === 'expired').length,
+      admins: db.users.filter((u) => u.isAdmin).length,
+      new7d: db.users.filter((u) => u.createdAt > now - 7 * DAY).length,
+    },
+  }
 })
+on('GET', '/admin/users/:id', (db, m) => {
+  requireAdmin(db)
+  const u = db.users.find((x) => x.id === Number(m[1])) ?? fail(404, 'User not found')
+  return {
+    user: adminUser(db, u),
+    profiles: db.profiles.filter((p) => p.userId === u.id).map((p) => ({ id: p.id, name: p.name, color: p.color, listCount: 0, watching: 0 })),
+    orders: db.orders.filter((o) => o.userId === u.id).map((o) => adminOrder(db, o)),
+    recentViews: [],
+    activeSessions: db.sessionUserId === u.id ? 1 : 0,
+    activity: [],
+  }
+})
+on('POST', '/admin/users/:id/sign-out', (db, m) => {
+  requireAdmin(db)
+  db.users.find((x) => x.id === Number(m[1])) ?? fail(404, 'User not found')
+  return { ok: true, sessions: 0 }
+})
+on('DELETE', '/admin/users/:id', (db, m) => {
+  const me = requireAdmin(db)
+  const u = db.users.find((x) => x.id === Number(m[1])) ?? fail(404, 'User not found')
+  if (u.id === me.id) fail(400, "You can't delete your own account here")
+  if (u.isAdmin) fail(400, 'Remove admin access before deleting this account')
+  db.users = db.users.filter((x) => x.id !== u.id)
+  delete db.subs[u.id]
+  return { ok: true }
+})
+on('GET', '/admin/activity', () => [])
 on('PATCH', '/admin/users/:id', (db, m, b) => {
   const me = requireAdmin(db)
   const u = db.users.find((x) => x.id === Number(m[1])) ?? fail(404, 'User not found')
@@ -725,12 +809,26 @@ on('DELETE', '/admin/users/:id/access', (db, m) => {
 })
 on('GET', '/admin/orders', (db) => {
   requireAdmin(db)
-  const status = new URLSearchParams(lastQuery).get('status')
-  return [...db.orders]
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .map((o) => ({ ...o, status: orderView(o).status }))
-    .filter((o) => !status || o.status === status)
-    .map((o) => ({ ...o, email: db.users.find((u) => u.id === o.userId)?.email ?? '?', providerInvoiceId: o.provider === 'test' ? null : `inv_${o.id.slice(0, 10)}` }))
+  const params = new URLSearchParams(lastQuery)
+  const status = params.get('status')
+  const q = (params.get('q') ?? '').toLowerCase()
+  const all = [...db.orders].sort((a, b) => b.createdAt - a.createdAt).map((o) => adminOrder(db, o))
+  const orders = all.filter((o) => (!status || o.status === status) && (!q || o.email.includes(q) || o.id.includes(q)))
+  const paid = all.filter((o) => o.status === 'paid')
+  return {
+    orders,
+    total: orders.length,
+    page: 1,
+    pageSize: 50,
+    stats: {
+      paid: paid.length,
+      revenueCents: paid.filter((o) => o.provider !== 'test').reduce((n, o) => n + o.amountCents, 0),
+      pending: all.filter((o) => o.status === 'pending' || o.status === 'confirming').length,
+      expired: all.filter((o) => o.status === 'expired').length,
+      failed: all.filter((o) => o.status === 'failed').length,
+      conversion: all.length ? (paid.length / all.length) * 100 : 0,
+    },
+  }
 })
 on('POST', '/admin/orders/:id/mark-paid', (db, m) => {
   requireAdmin(db)

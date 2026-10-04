@@ -249,6 +249,70 @@ export interface AdminUser {
   subscription: SubscriptionView | null
 }
 
+/** A row on the admin Users page. */
+export interface AdminUserRow extends AdminUser {
+  /** Last time any of the user's profiles watched something. */
+  lastWatchedAt: number | null
+  paidOrders: number
+  totalSpentCents: number
+  views30d: number
+  signInMethods: ('password' | 'google' | 'apple')[]
+}
+
+export type AdminUserFilter = 'all' | 'members' | 'comp' | 'expired' | 'free' | 'admins'
+export type AdminUserSort = 'newest' | 'oldest' | 'name' | 'spent' | 'active'
+
+export interface AdminUserPage {
+  users: AdminUserRow[]
+  total: number
+  page: number
+  pageSize: number
+  stats: { total: number; members: number; paying: number; comp: number; expired: number; admins: number; new7d: number }
+}
+
+export interface AdminUserDetail {
+  user: AdminUserRow
+  profiles: { id: number; name: string; color: string; listCount: number; watching: number }[]
+  orders: AdminOrder[]
+  recentViews: { seriesId: string; seriesTitle: string; episodeNumber: number; at: number }[]
+  activeSessions: number
+  activity: AdminActivity[]
+}
+
+export interface AdminOrder {
+  id: string
+  userId: number | null
+  email: string
+  plan: string
+  months: number
+  amountCents: number
+  provider: string
+  providerInvoiceId: string | null
+  checkoutUrl: string | null
+  /** Status as customers see it: stale pending orders read as expired. */
+  status: OrderStatus
+  payCurrency: string | null
+  createdAt: number
+  paidAt: number | null
+}
+
+export interface AdminOrderPage {
+  orders: AdminOrder[]
+  total: number
+  page: number
+  pageSize: number
+  stats: { paid: number; revenueCents: number; pending: number; expired: number; failed: number; conversion: number }
+}
+
+export interface AdminActivity {
+  id: number
+  adminEmail: string
+  action: string
+  target: string
+  detail: string
+  createdAt: number
+}
+
 export interface SeriesInput {
   id?: string
   title: string

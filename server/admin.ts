@@ -1,8 +1,9 @@
 import { buildAnalytics } from './analytics.ts'
+import { logAdmin, registerPeopleRoutes } from './adminPeople.ts'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
-import { Router, type Request } from 'express'
+import { Router, type Request, type RequestHandler } from 'express'
 import multer from 'multer'
 import {
   DURATIONS,
@@ -12,7 +13,6 @@ import {
   getPlan,
   type AdminSeriesDetail,
   type AdminStats,
-  type AdminUser,
   type Genre,
   type Rating,
   type SeriesInput,
@@ -21,14 +21,11 @@ import { requireAdmin } from './auth.ts'
 import { config } from './config.ts'
 import { BUNNY_PREFIX, bunnyConfigured, listCollections } from './bunny.ts'
 import { getLastSync, importBunnyNow } from './bunnyImport.ts'
-import { fulfillOrder } from './billing.ts'
 import { mediaDirs } from './catalog.ts'
 import { db, transaction } from './db.ts'
 import { HttpError, bool, int, str } from './http.ts'
 import {
   SERIES_SELECT,
-  getSubscription,
-  isActive,
   toAdminEpisode,
   toAdminSeries,
   type EpisodeRow,
@@ -152,9 +149,10 @@ adminRouter.get('/stats', (_req, res) => {
   const count = (sql: string, ...params: (string | number)[]) => (db.prepare(sql).get(...params) as { n: number }).n
 
   const activeSubs = db
-    .prepare('SELECT plan FROM subscriptions WHERE current_period_end IS NULL OR current_period_end > ?')
-    .all(now) as { plan: string }[]
-  const mrrCents = activeSubs.reduce((sum, s) => sum + (getPlan(s.plan) ?? MEMBERSHIP).priceCents, 0)
+    .prepare('SELECT plan, source FROM subscriptions WHERE current_period_end IS NULL OR current_period_end > ?')
+    .all(now) as { plan: string; source: string }[]
+  // Only paying members count toward run-rate; complimentary and test access don't bring in money.
+  const mrrCents = activeSubs.filter((s) => s.source === 'crypto').reduce((sum, s) => sum + (getPlan(s.plan) ?? MEMBERSHIP).priceCents, 0)
   const passesByLength: Record<number, number> = Object.fromEntries(DURATIONS.map((d) => [d.months, 0]))
   for (const r of db.prepare("SELECT months, COUNT(*) AS n FROM orders WHERE status = 'paid' GROUP BY months").all() as { months: number; n: number }[]) {
     passesByLength[r.months] = r.n
@@ -273,7 +271,9 @@ function deleteSeries(row: SeriesRow) {
 }
 
 adminRouter.delete('/series/:id', (req, res) => {
-  deleteSeries(seriesRow(req.params.id as string))
+  const row = seriesRow(req.params.id as string)
+  deleteSeries(row)
+  logAdmin(req, 'Deleted series', `series:${row.id}`, `${row.title} · ${row.episode_count} episodes`)
   res.json({ ok: true })
 })
 
@@ -287,12 +287,23 @@ adminRouter.post('/series/bulk-delete', (req, res) => {
     const row = db.prepare(`${SERIES_SELECT} WHERE s.id = ?`).get(id) as SeriesRow | undefined
     if (!row) continue
     deleteSeries(row)
+    logAdmin(req, 'Deleted series', `series:${row.id}`, `${row.title} · ${row.episode_count} episodes`)
     deleted++
   }
   res.json({ deleted })
 })
 
-adminRouter.post('/series/:id/poster', posterUpload, (req, res) => {
+// Check the target exists before multer writes a (possibly huge) file to disk.
+const seriesMustExist: RequestHandler = (req, _res, next) => {
+  seriesRow(req.params.id as string)
+  next()
+}
+const episodeMustExist: RequestHandler = (req, _res, next) => {
+  episodeRow(req)
+  next()
+}
+
+adminRouter.post('/series/:id/poster', seriesMustExist, posterUpload, (req, res) => {
   const row = seriesRow(req.params.id as string)
   if (!req.file) throw new HttpError(400, 'No file uploaded')
   db.prepare('UPDATE series SET poster_url = ?, updated_at = ? WHERE id = ?').run(
@@ -348,7 +359,7 @@ adminRouter.patch('/episodes/:id', (req, res) => {
   res.json(seriesDetail(ep.series_id))
 })
 
-adminRouter.post('/episodes/:id/video', videoUpload, (req, res) => {
+adminRouter.post('/episodes/:id/video', episodeMustExist, videoUpload, (req, res) => {
   const ep = episodeRow(req)
   if (!req.file) throw new HttpError(400, 'No file uploaded')
   const duration = req.body?.durationSec ? int(Math.round(Number(req.body.durationSec)), 'Duration', { min: 1 }) : ep.duration_sec
@@ -386,6 +397,10 @@ adminRouter.delete('/episodes/:id', (req, res) => {
   const ep = episodeRow(req)
   transaction(() => {
     db.prepare('DELETE FROM episodes WHERE id = ?').run(ep.id)
+    // Remember deleted Bunny videos so the next sync doesn't bring them back.
+    if (ep.video_url?.startsWith('bunny:')) {
+      db.prepare('INSERT OR IGNORE INTO bunny_removed_episodes (series_id, video_url, removed_at) VALUES (?, ?, ?)').run(ep.series_id, ep.video_url, Date.now())
+    }
     // Two passes via negative numbers so the UNIQUE(series_id, number) constraint never collides.
     db.prepare('UPDATE episodes SET number = -(number - 1) WHERE series_id = ? AND number > ?').run(ep.series_id, ep.number)
     db.prepare('UPDATE episodes SET number = -number WHERE series_id = ? AND number < 0').run(ep.series_id)
@@ -395,98 +410,8 @@ adminRouter.delete('/episodes/:id', (req, res) => {
   res.json(seriesDetail(ep.series_id))
 })
 
-// ----- Users -----
-
-function adminUser(id: number): AdminUser {
-  const u = db.prepare('SELECT id, email, name, is_admin, created_at FROM users WHERE id = ?').get(id) as
-    | { id: number; email: string; name: string; is_admin: number; created_at: number }
-    | undefined
-  if (!u) throw new HttpError(404, 'User not found')
-  return { id: u.id, email: u.email, name: u.name, isAdmin: u.is_admin === 1, createdAt: u.created_at, subscription: getSubscription(u.id) }
-}
-
-adminRouter.get('/users', (req, res) => {
-  const q = typeof req.query.q === 'string' ? req.query.q.trim() : ''
-  const filter = req.query.filter
-  const rows = db
-    .prepare(
-      `SELECT id FROM users WHERE (? = '' OR email LIKE ? OR name LIKE ?) ORDER BY created_at DESC LIMIT 200`,
-    )
-    .all(q, `%${q}%`, `%${q}%`) as { id: number }[]
-  let users = rows.map((r) => adminUser(r.id))
-  if (filter === 'subscribers') users = users.filter((u) => isActive(u.subscription))
-  if (filter === 'admins') users = users.filter((u) => u.isAdmin)
-  res.json(users)
-})
-
-adminRouter.patch('/users/:id', (req, res) => {
-  const id = int(req.params.id, 'User', { min: 1 })
-  const isAdmin = bool(req.body?.isAdmin, 'Admin')
-  if (id === req.user!.id && !isAdmin) throw new HttpError(400, "You can't remove your own admin access")
-  adminUser(id)
-  db.prepare('UPDATE users SET is_admin = ? WHERE id = ?').run(isAdmin ? 1 : 0, id)
-  res.json(adminUser(id))
-})
-
-/** Grants complimentary access. days = null means no end date. */
-adminRouter.post('/users/:id/access', (req, res) => {
-  const id = int(req.params.id, 'User', { min: 1 })
-  adminUser(id)
-  const plan = req.body?.plan ? getPlan(String(req.body.plan)) : MEMBERSHIP
-  if (!plan) throw new HttpError(400, 'Unknown plan')
-  const days = req.body?.days === null ? null : int(req.body?.days, 'Days', { min: 1, max: 3650 })
-  const end = days === null ? null : Date.now() + days * DAY_MS
-  db.prepare(
-    `INSERT INTO subscriptions (user_id, plan, current_period_end, source, updated_at) VALUES (?, ?, ?, 'comp', ?)
-     ON CONFLICT (user_id) DO UPDATE SET plan = excluded.plan, current_period_end = excluded.current_period_end,
-       source = 'comp', updated_at = excluded.updated_at`,
-  ).run(id, plan.id, end, Date.now())
-  res.json(adminUser(id))
-})
-
-adminRouter.delete('/users/:id/access', (req, res) => {
-  const id = int(req.params.id, 'User', { min: 1 })
-  db.prepare('DELETE FROM subscriptions WHERE user_id = ?').run(id)
-  res.json(adminUser(id))
-})
-
-// ----- Orders -----
-
-adminRouter.get('/orders', (req, res) => {
-  const status = typeof req.query.status === 'string' && req.query.status ? req.query.status : null
-  const rows = db
-    .prepare(
-      `SELECT o.*, u.email FROM orders o JOIN users u ON u.id = o.user_id
-       WHERE (? IS NULL OR o.status = ?) ORDER BY o.created_at DESC LIMIT 200`,
-    )
-    .all(status, status) as Record<string, unknown>[]
-  res.json(
-    rows.map((o) => ({
-      id: o.id,
-      email: o.email,
-      plan: o.plan,
-      months: o.months,
-      amountCents: o.amount_cents,
-      provider: o.provider,
-      providerInvoiceId: o.provider_invoice_id,
-      status: o.status,
-      payCurrency: o.pay_currency,
-      createdAt: o.created_at,
-      paidAt: o.paid_at,
-    })),
-  )
-})
-
-/** Manually confirm an order, e.g. an underpaid invoice the customer topped up off-platform. */
-adminRouter.post('/orders/:id/mark-paid', (req, res) => {
-  const order = db.prepare('SELECT id, status FROM orders WHERE id = ?').get(req.params.id as string) as
-    | { id: string; status: string }
-    | undefined
-  if (!order) throw new HttpError(404, 'Order not found')
-  if (order.status === 'paid') throw new HttpError(400, 'Order is already paid')
-  fulfillOrder(order.id)
-  res.json({ ok: true })
-})
+// ----- Users, orders and activity log live in adminPeople.ts -----
+registerPeopleRoutes(adminRouter)
 
 // ----- Bunny Stream import -----
 

@@ -145,6 +145,19 @@ db.exec(`CREATE TABLE IF NOT EXISTS episode_views (
 )`)
 db.exec('CREATE INDEX IF NOT EXISTS idx_views_created ON episode_views(created_at)')
 db.exec('CREATE INDEX IF NOT EXISTS idx_users_created ON users(created_at)')
+// Bunny videos an admin removed from a series; the sync leaves them out instead of adding them back.
+db.exec('CREATE TABLE IF NOT EXISTS bunny_removed_episodes (series_id TEXT NOT NULL, video_url TEXT NOT NULL, removed_at INTEGER NOT NULL, PRIMARY KEY (series_id, video_url))')
+// Who did what in the admin panel (grants, revokes, deletions, manual payments).
+db.exec(`CREATE TABLE IF NOT EXISTS admin_actions (
+  id INTEGER PRIMARY KEY,
+  admin_id INTEGER,
+  admin_email TEXT NOT NULL,
+  action TEXT NOT NULL,
+  target TEXT NOT NULL,
+  detail TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+)`)
+db.exec('CREATE INDEX IF NOT EXISTS idx_admin_actions_created ON admin_actions(created_at)')
 // Google / Apple accounts linked to a user (subject = the provider's stable user id).
 db.exec(`CREATE TABLE IF NOT EXISTS user_identities (
   provider TEXT NOT NULL,

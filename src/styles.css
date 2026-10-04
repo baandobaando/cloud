@@ -4050,7 +4050,7 @@ code {
   color: var(--bg);
 }
 
-.ep-grid {
+.ep-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: 1rem 0.75rem;
@@ -4199,7 +4199,7 @@ code {
 }
 
 @media (max-width: 720px) {
-  .ep-grid {
+  .ep-tiles {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.9rem 0.6rem;
   }

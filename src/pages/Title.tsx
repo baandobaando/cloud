@@ -158,7 +158,7 @@ function Episodes({ series, resumeEp }: { series: SeriesDetail; resumeEp?: numbe
       {total === 0 ? (
         <p className="muted">Episodes coming soon.</p>
       ) : (
-        <div className="ep-grid">
+        <div className="ep-tiles">
           {shown.map((ep) => (
             <Link
               key={ep.id}

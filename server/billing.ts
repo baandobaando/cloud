@@ -23,7 +23,7 @@ import { WebhookSignatureError, type PaymentProvider } from './payments/types.ts
 const PROVIDERS: PaymentProvider[] = [nowpayments, btcpay, testProvider]
 const DAY_MS = 24 * 60 * 60 * 1000
 /** Unpaid orders are treated as expired after this long. */
-const ORDER_TTL_MS = DAY_MS
+export const ORDER_TTL_MS = DAY_MS
 /** Minimum gap between status lookups against a processor for the same order. */
 const STATUS_POLL_MS = 15_000
 
@@ -171,6 +171,10 @@ billingRouter.post('/orders', rateLimit({ windowMs: 10 * 60 * 1000, max: 20 }), 
   const months = int(req.body?.months, 'Duration')
   if (!DURATIONS.some((d) => d.months === months)) throw new HttpError(400, 'Unsupported duration')
   const p = provider(str(req.body?.provider, 'Payment method'))
+  const current = getSubscription(req.user!.id)
+  if (current && current.currentPeriodEnd === null) {
+    throw new HttpError(400, 'Your account already has access with no end date, so there is nothing to buy.')
+  }
 
   const id = crypto.randomUUID()
   const amountCents = priceFor(plan, months)

@@ -7,7 +7,8 @@ import { useSession } from '../state/Session'
 
 /** Only allow redirecting to paths on this site. */
 export function safeNext(next: string | null): string {
-  return next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
+  // "//x" and "/\\x" are read by browsers as other hosts.
+  return next && /^\/(?![/\\])/.test(next) && !next.includes('\\') ? next : '/'
 }
 
 const OAUTH_ERRORS: Record<string, string> = {

@@ -25,7 +25,7 @@ interface ImportResult {
   report: {
     collection: string
     seriesId: string
-    action: 'created' | 'updated' | 'skipped'
+    action: 'created' | 'updated' | 'unchanged' | 'skipped'
     episodes: number
     pending: number
     missing: number[]
