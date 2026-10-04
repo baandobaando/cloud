@@ -39,7 +39,9 @@ before(async () => {
   app.use('/api/auth', authRouter)
   app.use('/api/auth', oauthRouter)
   app.get('/api/me', (req, res) => res.json(req.user ?? null))
-  await new Promise<void>((r) => (server = app.listen(0, r)))
+  await new Promise<void>((r) => {
+    server = app.listen(0, () => r())
+  })
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input)
@@ -76,7 +78,8 @@ async function signIn(p: 'google' | 'apple', claims: (nonce: string) => Record<s
   return { location: res.headers.get('location'), session, authorize }
 }
 
-const me = async (cookie?: string) => (await realFetch(`${base}/api/me`, { headers: cookie ? { cookie } : {} })).json()
+const me = async (cookie?: string) =>
+  (await (await realFetch(`${base}/api/me`, { headers: cookie ? { cookie } : {} })).json()) as { email: string; name: string }
 
 describe('Sign in with Google', () => {
   test('creates an account, signs in and returns to next', async () => {
