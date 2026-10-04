@@ -53,6 +53,11 @@ if (isProduction && fs.existsSync(distDir)) {
   })
 }
 
+// In development the website runs on Vite (port 5173); send stray visits to the API port there.
+if (!isProduction) {
+  app.get(/^\/(?!api\/|media\/).*/, (req, res) => res.redirect(`${config.appUrl}${req.originalUrl}`))
+}
+
 app.use(errorHandler)
 
 await ensureAdmin()
