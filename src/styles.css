@@ -4936,3 +4936,24 @@ video.feature-hero__preview {
 .legal__contact {
   margin-top: 2.5rem;
 }
+
+/* Text the server bakes into the homepage for crawlers; shown only for the instant before the app loads. */
+.prerender {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1rem;
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+  color: var(--text-2);
+}
+
+.prerender h1 {
+  color: var(--text);
+  font-size: 2.4rem;
+}
+
+.prerender a {
+  color: var(--text);
+}

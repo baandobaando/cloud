@@ -10,6 +10,7 @@ import { startBunnyAutoImport } from './bunnyImport.ts'
 import { catalogRouter, mediaRouter } from './catalog.ts'
 import { config, isProduction } from './config.ts'
 import { HttpError, errorHandler } from './http.ts'
+import { HOME_SUMMARY_HTML, PRIVACY_HTML, TERMS_HTML, legalArticle } from '../shared/legal.ts'
 
 const app = express()
 app.disable('x-powered-by')
@@ -52,9 +53,23 @@ app.use('/api', () => {
 const distDir = path.resolve('dist')
 if (isProduction && fs.existsSync(distDir)) {
   app.use(express.static(distDir, { index: false, maxAge: '1y', immutable: true }))
-  app.get(/.*/, (_req, res) => {
+  // Pages crawlers must be able to read without JavaScript get their text baked into the HTML; the app replaces it on load.
+  const shell = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8')
+  const page = (title: string | null, inner: string) =>
+    (title ? shell.replace(/<title>[^<]*<\/title>/, `<title>${title} · BingeTube</title>`) : shell).replace(
+      '<div id="root"></div>',
+      `<div id="root">${inner}</div>`,
+    )
+  const prerendered: Record<string, string> = {
+    '/': page(null, `<main class="page prerender">${HOME_SUMMARY_HTML}</main>`),
+    '/privacy': page('Privacy Policy', `<main class="page">${legalArticle('Privacy Policy', PRIVACY_HTML)}</main>`),
+    '/terms': page('Terms of Service', `<main class="page">${legalArticle('Terms of Service', TERMS_HTML)}</main>`),
+  }
+  app.get(/.*/, (req, res) => {
     res.setHeader('Cache-Control', 'no-cache')
-    res.sendFile(path.join(distDir, 'index.html'))
+    const html = prerendered[req.path.replace(/\/+$/, '') || '/']
+    if (html) res.type('html').send(html)
+    else res.sendFile(path.join(distDir, 'index.html'))
   })
 }
 
