@@ -26,6 +26,15 @@ export const config = {
     storeId: env.BTCPAY_STORE_ID ?? '',
     webhookSecret: env.BTCPAY_WEBHOOK_SECRET ?? '',
   },
+  bunny: {
+    libraryId: env.BUNNY_LIBRARY_ID ?? '',
+    libraryKey: env.BUNNY_LIBRARY_KEY ?? '',
+    cdnHost: (env.BUNNY_CDN_HOST ?? '').replace(/^https?:\/\//, '').replace(/\/$/, ''),
+    /** Token authentication key from the library's Security tab. Without it, playback links are unsigned. */
+    tokenKey: env.BUNNY_TOKEN_KEY ?? '',
+    /** 'sha256' (classic) or 'hmac' (HS256). `npm run bunny:check` tells you which one your library accepts. */
+    tokenMode: (env.BUNNY_TOKEN_MODE === 'hmac' ? 'hmac' : 'sha256') as 'sha256' | 'hmac',
+  },
   adminEmail: env.ADMIN_EMAIL ?? (isProduction ? '' : 'admin@reelflix.local'),
   adminPassword: env.ADMIN_PASSWORD ?? (isProduction ? '' : 'admin12345'),
   /** Test checkout (no real charge). Never available in production. */

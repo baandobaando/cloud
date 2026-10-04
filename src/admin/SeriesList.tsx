@@ -4,6 +4,8 @@ import type { AdminSeries } from '../../shared/types'
 import { useApi } from '../useApi'
 import Poster from '../components/Poster'
 import { ErrorState, Spinner } from '../components/Feedback'
+import { IS_DEMO } from '../api'
+import BunnyImport from './BunnyImport'
 
 export default function SeriesList() {
   const { data, error, reload } = useApi<AdminSeries[]>('/admin/series')
@@ -26,6 +28,7 @@ export default function SeriesList() {
         <h1>Series</h1>
         <Link to="/admin/series/new" className="btn btn--accent">+ New series</Link>
       </div>
+      {!IS_DEMO && <BunnyImport onImported={reload} />}
       <div className="toolbar">
         <input className="input" placeholder="Search series…" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="segmented segmented--small">

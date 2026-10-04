@@ -8,6 +8,7 @@ import type {
   SeriesSummary,
   SubscriptionView,
 } from '../shared/types.ts'
+import { resolveMediaUrl } from './bunny.ts'
 import { db } from './db.ts'
 
 export interface SeriesRow {
@@ -54,7 +55,7 @@ export function toSummary(r: SeriesRow): SeriesSummary {
     rating: r.rating as Rating,
     palette: JSON.parse(r.palette) as [string, string],
     emoji: r.emoji,
-    posterUrl: r.poster_url,
+    posterUrl: resolveMediaUrl(r.poster_url),
     isNew: r.is_new === 1,
     trendingRank: r.trending_rank,
     freeEpisodes: r.free_episodes,
@@ -67,7 +68,7 @@ export function toAdminSeries(r: SeriesRow): AdminSeries {
 }
 
 export function toAdminEpisode(r: EpisodeRow): AdminEpisode {
-  return { id: r.id, number: r.number, title: r.title, durationSec: r.duration_sec, videoUrl: r.video_url }
+  return { id: r.id, number: r.number, title: r.title, durationSec: r.duration_sec, videoUrl: resolveMediaUrl(r.video_url) }
 }
 
 export function toEpisodeView(r: EpisodeRow, unlocked: boolean): EpisodeView {
@@ -76,7 +77,7 @@ export function toEpisodeView(r: EpisodeRow, unlocked: boolean): EpisodeView {
     number: r.number,
     title: r.title,
     durationSec: r.duration_sec,
-    videoUrl: unlocked ? r.video_url : null,
+    videoUrl: unlocked ? resolveMediaUrl(r.video_url) : null,
     locked: !unlocked,
   }
 }

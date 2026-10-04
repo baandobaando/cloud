@@ -4,3 +4,7 @@ dist
 .DS_Store
 data
 dist-demo
+.env
+.env.*
+!.env.example
+*.tsbuildinfo

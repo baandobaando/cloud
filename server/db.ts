@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { config } from './config.ts'
+import { config, isProduction } from './config.ts'
 import { SEED_SERIES } from './seed.ts'
 
 fs.mkdirSync(config.dataDir, { recursive: true })
@@ -123,6 +123,16 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_orders_invoice ON orders(provider, provider_invoice_id);
 `)
 
+/** Adds a column to an existing table if an older database doesn't have it yet. */
+function ensureColumn(table: string, column: string, definition: string) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
+  if (!cols.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+}
+
+// Series imported from Bunny Stream remember their collection so re-imports update them.
+ensureColumn('series', 'bunny_collection_id', 'TEXT')
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_series_bunny ON series(bunny_collection_id) WHERE bunny_collection_id IS NOT NULL')
+
 /** Runs fn inside a transaction, rolling back on error. */
 export function transaction<T>(fn: () => T): T {
   db.exec('BEGIN')
@@ -136,7 +146,9 @@ export function transaction<T>(fn: () => T): T {
   }
 }
 
+/** Sample series for local development only; a production database starts empty (import from Bunny). */
 function seedCatalog() {
+  if (isProduction && process.env.SEED_SAMPLE_CATALOG !== 'true') return
   const { n } = db.prepare('SELECT COUNT(*) AS n FROM series').get() as { n: number }
   if (n > 0) return
 

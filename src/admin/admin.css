@@ -421,3 +421,30 @@ textarea.input {
     overflow-x: auto;
   }
 }
+
+.bunny {
+  margin-bottom: 1.2rem;
+}
+
+.bunny .admin__head {
+  margin-bottom: 0.4rem;
+}
+
+.bunny__result {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-raise);
+}
+
+.bunny__result ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.3rem;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 0.88rem;
+}

@@ -59,6 +59,17 @@ npm run typecheck
 
 Crypto can't be charged automatically each month the way a card can, so members buy **prepaid passes**. Buying again while a pass is active adds the new time on top of the time remaining. Access is granted when the processor confirms the payment on-chain.
 
+## Videos: Bunny Stream
+
+1. Put `BUNNY_LIBRARY_ID`, `BUNNY_LIBRARY_KEY`, `BUNNY_CDN_HOST` and `BUNNY_TOKEN_KEY` in `.env` (see `.env.example`).
+2. `npm run bunny:check` confirms API access and which token-signing mode your CDN accepts.
+3. Admin → Series → **Import from Bunny**: each collection becomes a series, each finished video an episode
+   (ordered by `epNN` in the title). Re-run it any time to pick up new uploads.
+4. Playback uses short-lived signed HLS links, issued only for episodes the viewer may watch.
+
+`node --env-file=.env scripts/bunny-keep-highest.mjs [--dry-run]` deletes every resolution except the highest on
+finished videos (single-resolution videos and original files are kept).
+
 ## Project layout
 
 | Path | What |
