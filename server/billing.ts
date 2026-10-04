@@ -19,6 +19,7 @@ import { btcpay } from './payments/btcpay.ts'
 import { stripeProvider } from './payments/stripe.ts'
 import { testProvider } from './payments/test.ts'
 import { WebhookSignatureError, type PaymentProvider } from './payments/types.ts'
+import { completeSubscriptionOrder, handleSubscriptionEvent, subscriptionRouter } from './subscriptions.ts'
 
 const PROVIDERS: PaymentProvider[] = [stripeProvider, btcpay, testProvider]
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -46,6 +47,7 @@ interface OrderRow {
   pay_currency: string | null
   created_at: number
   paid_at: number | null
+  kind: 'pass' | 'subscription'
 }
 
 function toOrderView(o: OrderRow): OrderView {
@@ -60,6 +62,7 @@ function toOrderView(o: OrderRow): OrderView {
     checkoutUrl: o.checkout_url,
     createdAt: o.created_at,
     paidAt: o.paid_at,
+    kind: o.kind,
   }
 }
 
@@ -106,9 +109,12 @@ export function fulfillOrder(orderId: string, payCurrency?: string): boolean {
   })
 }
 
-function applyStatus(order: OrderRow, status: OrderStatus, payCurrency?: string) {
+async function applyStatus(order: OrderRow, status: OrderStatus, payCurrency?: string) {
   if (order.status === 'paid') return
-  if (status === 'paid') {
+  if (status === 'paid' && order.kind === 'subscription') {
+    // Access comes from the Stripe subscription itself, not from a fixed number of months.
+    if (order.provider_invoice_id) await completeSubscriptionOrder(order.id, order.provider_invoice_id)
+  } else if (status === 'paid') {
     fulfillOrder(order.id, payCurrency)
   } else if (status !== order.status) {
     db.prepare('UPDATE orders SET status = ?, pay_currency = COALESCE(?, pay_currency) WHERE id = ?').run(
@@ -122,7 +128,7 @@ function applyStatus(order: OrderRow, status: OrderStatus, payCurrency?: string)
 export const billingRouter = Router()
 
 billingRouter.get('/config', (_req, res) => {
-  const body: BillingConfig = { providers: PROVIDERS.filter((p) => p.isConfigured()).map((p) => p.info) }
+  const body: BillingConfig = { providers: PROVIDERS.filter((p) => p.isConfigured()).map((p) => p.info), subscription: stripeProvider.isConfigured() }
   res.json(body)
 })
 
@@ -154,15 +160,18 @@ for (const p of [stripeProvider, btcpay]) {
       } else if (result.status === 'paid' && result.amountCents !== undefined && result.amountCents < order.amount_cents) {
         console.warn(`[billing] Order ${order.id} amount mismatch: got ${result.amountCents}, expected ${order.amount_cents}`)
       } else {
-        applyStatus(order, result.status, result.payCurrency)
+        await applyStatus(order, result.status, result.payCurrency)
       }
     }
+    // Monthly subscription lifecycle (renewals, cancellations, trial ending) arrives on the same Stripe endpoint.
+    if (p === stripeProvider) await handleSubscriptionEvent(JSON.parse(req.body.toString('utf8')))
     res.json({ ok: true })
   })
 }
 
 // ----- Signed-in routes -----
 
+billingRouter.use(subscriptionRouter)
 billingRouter.use(requireUser)
 
 billingRouter.post('/orders', rateLimit({ windowMs: 10 * 60 * 1000, max: 20 }), async (req, res) => {
@@ -222,7 +231,7 @@ billingRouter.get('/orders/:id', async (req, res) => {
     lastPolled.set(order.id, Date.now())
     const status = await p.fetchStatus(order.provider_invoice_id).catch(() => null)
     if (status) {
-      applyStatus(order, status)
+      await applyStatus(order, status)
       order = getOrder(order.id)!
     }
   }

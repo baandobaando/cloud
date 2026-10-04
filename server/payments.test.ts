@@ -219,3 +219,92 @@ describe('fulfillOrder', () => {
     assert.ok(end >= before + 30 * DAY && end <= Date.now() + 30 * DAY)
   })
 })
+
+describe('Monthly subscriptions', async () => {
+  const { applyStripeSubscription, handleSubscriptionEvent, completeSubscriptionOrder, trialEligible } = await import('./subscriptions.ts')
+  const { isActive } = await import('./models.ts')
+  const day = 24 * 60 * 60
+  let subUser: number
+  const nowS = () => Math.floor(Date.now() / 1000)
+  const sub = (over: Record<string, unknown> = {}) => ({
+    id: 'sub_1', customer: 'cus_1', status: 'trialing', cancel_at_period_end: false,
+    current_period_end: nowS() + 3 * day, trial_end: nowS() + 3 * day, metadata: { user_id: String(subUser) }, ...over,
+  })
+  const withFetch = async <T>(responses: Record<string, unknown>, fn: () => Promise<T>) => {
+    const real = globalThis.fetch
+    globalThis.fetch = (async (url: string) => {
+      const key = Object.keys(responses).find((k) => url.includes(k))
+      return new Response(JSON.stringify(key ? responses[key] : {}), { status: key ? 200 : 404 })
+    }) as typeof fetch
+    try { return await fn() } finally { globalThis.fetch = real }
+  }
+
+  before(() => {
+    const { lastInsertRowid } = db.prepare("INSERT INTO users (email, password_hash, name, created_at) VALUES ('sub@test.com', 'x', 'Sub', ?)").run(Date.now())
+    subUser = Number(lastInsertRowid)
+  })
+
+  test('a new account can trial; the trial gives access until it ends and uses up the trial', () => {
+    assert.equal(trialEligible(subUser), true)
+    assert.equal(applyStripeSubscription(sub()), subUser)
+    const s = getSubscription(subUser)!
+    assert.equal(isActive(s), true)
+    assert.equal(s.renews, true)
+    assert.ok(s.trialEndsAt && s.trialEndsAt > Date.now())
+    assert.equal(trialEligible(subUser), false)
+  })
+
+  test('cancelling keeps access to the end of the period, then deletion ends it', () => {
+    applyStripeSubscription(sub({ status: 'active', trial_end: null, cancel_at_period_end: true, current_period_end: nowS() + 20 * day }))
+    let s = getSubscription(subUser)!
+    assert.deepEqual([s.renews, s.cancelAtPeriodEnd, isActive(s)], [false, true, true])
+    applyStripeSubscription(sub({ status: 'canceled', ended_at: nowS() - 1 }))
+    s = getSubscription(subUser)!
+    assert.equal(isActive(s), false)
+    assert.equal(s.renews, false)
+  })
+
+  test('reads the period end from the subscription item on newer Stripe API versions', () => {
+    const end = nowS() + 31 * day
+    applyStripeSubscription(sub({ status: 'active', trial_end: null, current_period_end: undefined, items: { data: [{ current_period_end: end }] } }))
+    assert.equal(getSubscription(subUser)!.currentPeriodEnd, end * 1000)
+  })
+
+  test('invoice.paid renews access and records the charge exactly once', async () => {
+    const end = nowS() + 30 * day
+    const event = { type: 'invoice.paid', data: { object: { id: 'in_1', amount_paid: 999, currency: 'usd', subscription: 'sub_1' } } }
+    await withFetch({ '/subscriptions/sub_1': sub({ status: 'active', trial_end: null, current_period_end: end }) }, async () => {
+      await handleSubscriptionEvent(event)
+      await handleSubscriptionEvent(event)
+    })
+    assert.equal(getSubscription(subUser)!.currentPeriodEnd, end * 1000)
+    const { n } = db.prepare("SELECT COUNT(*) AS n FROM payments WHERE provider_ref = 'in_1'").get() as { n: number }
+    assert.equal(n, 1)
+  })
+
+  test('a $0 trial invoice is not recorded as revenue', async () => {
+    await withFetch({ '/subscriptions/sub_1': sub() }, () =>
+      handleSubscriptionEvent({ type: 'invoice.paid', data: { object: { id: 'in_trial', amount_paid: 0, parent: { subscription_details: { subscription: 'sub_1' } } } } }),
+    )
+    assert.equal(db.prepare("SELECT 1 FROM payments WHERE provider_ref = 'in_trial'").get(), undefined)
+  })
+
+  test('completing the subscription checkout marks the order paid and links the subscription', async () => {
+    const { lastInsertRowid } = db.prepare("INSERT INTO users (email, password_hash, name, created_at) VALUES ('sub2@test.com', 'x', 'Sub2', ?)").run(Date.now())
+    const user2 = Number(lastInsertRowid)
+    db.prepare(
+      "INSERT INTO orders (id, user_id, plan, months, amount_cents, provider, provider_invoice_id, status, created_at, kind) VALUES ('so-1', ?, 'member', 1, 0, 'stripe', 'cs_sub', 'pending', ?, 'subscription')",
+    ).run(user2, Date.now())
+    await withFetch(
+      {
+        '/checkout/sessions/cs_sub': { status: 'complete', subscription: 'sub_2', customer: 'cus_2' },
+        '/subscriptions/sub_2': { id: 'sub_2', customer: 'cus_2', status: 'trialing', current_period_end: nowS() + 3 * day, trial_end: nowS() + 3 * day, metadata: {} },
+      },
+      () => completeSubscriptionOrder('so-1', 'cs_sub'),
+    )
+    assert.equal((db.prepare("SELECT status FROM orders WHERE id = 'so-1'").get() as { status: string }).status, 'paid')
+    const s = getSubscription(user2)!
+    assert.equal(isActive(s), true)
+    assert.equal(s.renews, true)
+  })
+})

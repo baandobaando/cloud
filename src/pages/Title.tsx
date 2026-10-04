@@ -9,6 +9,7 @@ import Icon from '../components/Icon'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { useRetryImage } from '../components/useRetryImage'
 import { usePageTitle } from '../usePageTitle'
+import { useTrialOffer } from '../useTrialOffer'
 
 const RANGE = 24
 
@@ -16,6 +17,7 @@ export default function Title() {
   const { seriesId = '' } = useParams()
   const navigate = useNavigate()
   const { me, catalog, myList, toggleMyList, progress } = useSession()
+  const trialDays = useTrialOffer()
   // Re-fetched when membership changes (e.g. right after paying) so episodes unlock without a page reload.
   const { data: series, error, reload } = useApi<SeriesDetail>(`/series/${encodeURIComponent(seriesId)}${me?.isEntitled ? '?member' : ''}`)
   usePageTitle(series?.id === seriesId ? series.title : null)
@@ -97,16 +99,18 @@ export default function Title() {
                   <Icon name="unlock" size={20} />
                 </div>
                 <div className="unlock-card__text">
-                  <strong>Unlock all {series.episodes.length} episodes</strong>
+                  <strong>{trialDays ? `Watch all ${series.episodes.length} episodes free for ${trialDays} days` : `Unlock all ${series.episodes.length} episodes`}</strong>
                   <span>
-                    {series.freeEpisodes > 0 ? `First ${series.freeEpisodes} are free. ` : ''}Every series included for {formatPrice(MEMBERSHIP.priceCents)} a month.
+                    {trialDays
+                      ? `Then ${formatPrice(MEMBERSHIP.priceCents)} a month for every series. Cancel anytime.`
+                      : `${series.freeEpisodes > 0 ? `First ${series.freeEpisodes} are free. ` : ''}Every series included for ${formatPrice(MEMBERSHIP.priceCents)} a month.`}
                   </span>
                 </div>
                 <Link
                   to={me ? `/plans?return=/title/${series.id}` : `/signup?next=${encodeURIComponent(`/plans?return=/title/${series.id}`)}`}
                   className="btn btn--accent btn--small"
                 >
-                  Join now
+                  {trialDays ? 'Try it free' : 'Join now'}
                 </Link>
               </div>
             )}

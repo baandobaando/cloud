@@ -21,7 +21,7 @@ interface Session {
   currency?: string | null
 }
 
-async function stripe<T>(path: string, form?: Record<string, string>): Promise<T> {
+export async function stripe<T>(path: string, form?: Record<string, string>): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     method: form ? 'POST' : 'GET',
     headers: {

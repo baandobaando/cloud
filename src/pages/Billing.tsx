@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { formatPrice, type OrderView } from '../../shared/types'
+import { MEMBERSHIP, formatPrice, type OrderView } from '../../shared/types'
 import Icon from '../components/Icon'
 import { api, errorMessage } from '../api'
 import { useSession } from '../state/Session'
@@ -56,7 +56,10 @@ export function OrderStatusPage() {
   if (error && !order) return <main className="page"><ErrorState message={error} /></main>
   if (!order) return <Spinner fullscreen />
 
-  const summary = `Membership · ${order.months} month${order.months > 1 ? 's' : ''} · ${formatPrice(order.amountCents)}`
+  const isSub = order.kind === 'subscription'
+  const summary = isSub
+    ? `Monthly membership · ${order.amountCents === 0 ? `free trial, then ${formatPrice(MEMBERSHIP.priceCents)}/month` : `${formatPrice(MEMBERSHIP.priceCents)}/month`}`
+    : `Membership · ${order.months} month${order.months > 1 ? 's' : ''} · ${formatPrice(order.amountCents)}`
 
   return (
     <main className="page page--center">
@@ -66,7 +69,11 @@ export function OrderStatusPage() {
             <div className="status-card__icon status-card__icon--ok"><Icon name="check" size={30} /></div>
             <h1>You're in!</h1>
             <p className="muted">{summary}</p>
-            <p>Payment confirmed. Every episode of every series is now unlocked.</p>
+            <p>
+              {isSub && order.amountCents === 0
+                ? 'Your free trial has started. Every episode of every series is unlocked.'
+                : 'Payment confirmed. Every episode of every series is now unlocked.'}
+            </p>
             <button className="btn btn--accent btn--block" onClick={() => navigate(takeReturnPath())}>
               Start Watching
             </button>

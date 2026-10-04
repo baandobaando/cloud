@@ -1,6 +1,6 @@
 # BingeTube
 
-A Netflix-style streaming app for vertical short dramas (like ReelShort / DramaBox). Members buy prepaid passes through **Stripe** (card, Apple Pay, Google Pay) in place of coins or per-episode unlocks.
+A Netflix-style streaming app for vertical short dramas (like ReelShort / DramaBox). Members subscribe monthly through **Stripe** (card, Apple Pay, Google Pay), with a free trial for new accounts, in place of coins or per-episode unlocks.
 
 ## What's inside
 
@@ -57,7 +57,7 @@ npm run typecheck
 
 ## How memberships work
 
-Members buy **prepaid passes** with a one-time payment, so nothing renews behind their back. Buying again while a pass is active adds the new time on top of the time remaining. Access is granted as soon as Stripe's webhook confirms the payment.
+Members subscribe through **Stripe Billing**: a 3-day free trial for new accounts (card required, one per account), then $9.99 a month until they cancel from the Account page (access runs to the end of the paid month). Access mirrors the Stripe subscription, kept in sync by webhooks (`checkout.session.completed`, `invoice.paid`, `customer.subscription.updated` / `.deleted`). Promotion codes created in the Stripe dashboard work at checkout. Prepaid passes remain for other processors (BTCPay, test checkout).
 
 ## Videos: Bunny Stream
 

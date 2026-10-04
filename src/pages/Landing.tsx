@@ -11,7 +11,7 @@ import { usePageTitle } from '../usePageTitle'
 const POINTS: { icon: IconName; title: string; text: string }[] = [
   { icon: 'phone', title: 'Made for your phone', text: 'Vertical episodes, one to two minutes each. Swipe up for the next one.' },
   { icon: 'unlock', title: 'No coins, no unlocks', text: 'One membership opens every episode. The first few of each series are free.' },
-  { icon: 'card', title: 'Simple checkout', text: 'Card, Apple Pay or Google Pay through Stripe. Prepaid, so nothing renews behind your back.' },
+  { icon: 'card', title: 'Simple checkout', text: 'Card, Apple Pay or Google Pay through Stripe. Monthly, cancel anytime in two clicks.' },
 ]
 
 export default function Landing() {

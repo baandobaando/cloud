@@ -22,7 +22,7 @@ If you have questions, contact us at ${contact}.</p>
   about Google user data.</li>
   <li><strong>Viewing activity.</strong> The series and episodes you watch, your playback position, your profiles and your My List.</li>
   <li><strong>Payment information.</strong> Memberships are paid through Stripe, which processes your card, Apple Pay or Google
-  Pay payment on its own secure page. We record the order, amount, pass length and payment status. We never receive or store your full
+  Pay payment on its own secure page. We record your membership, its renewal date, the amounts charged and payment status. We never receive or store your full
   card number or bank details.</li>
   <li><strong>Technical information.</strong> Essential cookies that keep you signed in, and server logs such as IP address, browser type
   and request times, used for security and troubleshooting.</li>
@@ -115,14 +115,17 @@ watching on BingeTube you agree to them. If you do not agree, please do not use 
 
 <h2>2. Membership and payments</h2>
 <ul>
-  <li>Some episodes are free. A membership pass unlocks every episode of every series for the length you buy (1, 3 or 12 months), at the
-  prices shown on the <a href="/plans">Plans</a> page.</li>
-  <li>Passes are prepaid and do not renew automatically. Buying another pass adds time to your current one.</li>
+  <li>Some episodes are free. A membership unlocks every episode of every series at the price shown on the <a href="/plans">Plans</a>
+  page.</li>
+  <li><strong>Memberships renew automatically every month</strong> and are charged to your payment method until you cancel. You can cancel
+  anytime from your Account page; you keep access until the end of the month you have paid for and are not charged again.</li>
+  <li><strong>Free trial.</strong> New accounts may get a free trial. A payment method is required to start it. If you do not cancel
+  before the trial ends, your monthly membership starts and you are charged automatically. One trial per person.</li>
   <li>Payments are processed by Stripe, whose terms also apply. Prices are in US dollars; your bank may add currency conversion
   fees.</li>
   <li>Because access starts immediately, payments are generally non-refundable. If something went wrong with a payment or your access,
   contact us and we will look into it.</li>
-  <li>We may change prices for future purchases; passes you have already bought are not affected.</li>
+  <li>We may change prices. We will tell you before a price change applies to your membership, and you can cancel before it does.</li>
 </ul>
 
 <h2>3. Acceptable use</h2>

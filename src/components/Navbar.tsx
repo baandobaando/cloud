@@ -3,9 +3,11 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useSession } from '../state/Session'
 import Icon from './Icon'
 import Logo from './Logo'
+import { useTrialOffer } from '../useTrialOffer'
 
 export default function Navbar() {
   const { me, activeProfile, logout } = useSession()
+  const trialDays = useTrialOffer()
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -52,9 +54,15 @@ export default function Navbar() {
           )}
           {(!me || !me.isEntitled) && (
             <Link to={me ? '/plans' : '/signup?next=/plans'} className="btn btn--small btn--accent">
-              <span>
-                Join<span className="hide-phone"> for $9.99</span>
-              </span>
+              {trialDays ? (
+                <span>
+                  Try<span className="hide-phone"> {trialDays} days</span> free
+                </span>
+              ) : (
+                <span>
+                  Join<span className="hide-phone"> for $9.99</span>
+                </span>
+              )}
             </Link>
           )}
           {me && (

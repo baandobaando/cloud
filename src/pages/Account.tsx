@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { formatPrice, type OrderView } from '../../shared/types'
+import { MEMBERSHIP, formatPrice, type OrderView } from '../../shared/types'
 import { IS_DEMO, api, errorMessage } from '../api'
 import { ResetDemoButton } from '../demo/DemoHints'
 import { useSession } from '../state/Session'
@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<OrderView['status'], string> = {
 
 export default function Account() {
   usePageTitle('Account')
-  const { me, logout } = useSession()
+  const { me, logout, refreshMe } = useSession()
   const navigate = useNavigate()
   const toast = useToast()
   const dialog = useDialog()
@@ -32,6 +32,32 @@ export default function Account() {
   const hasPassword = me.hasPassword !== false
   const sub = me.subscription
   const ended = sub?.currentPeriodEnd !== null && sub?.currentPeriodEnd !== undefined && sub.currentPeriodEnd < Date.now()
+
+  const longDate = (ms: number) => new Date(ms).toLocaleDateString(undefined, { dateStyle: 'long' })
+
+  const setRenewal = async (renew: boolean) => {
+    if (!renew) {
+      const ok = await dialog.confirm({
+        title: 'Cancel your membership?',
+        message: sub?.currentPeriodEnd
+          ? `You'll keep every episode until ${longDate(sub.currentPeriodEnd)} and won't be charged again.`
+          : "You won't be charged again.",
+        confirmLabel: 'Cancel membership',
+        danger: true,
+      })
+      if (!ok) return
+    }
+    setBusy(true)
+    try {
+      await api.post(`/billing/subscription/${renew ? 'resume' : 'cancel'}`, {})
+      await refreshMe()
+      toast(renew ? 'Welcome back! Your membership will keep renewing.' : 'Membership cancelled. You keep access until the end of this period.', 'success')
+    } catch (err) {
+      toast(errorMessage(err), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const changePassword = async (e: FormEvent) => {
     e.preventDefault()
@@ -60,6 +86,28 @@ export default function Account() {
               Full access <span className="tag">Admin</span>
             </p>
             <p className="muted">Admin accounts can watch every episode, the same as a paying member.</p>
+          </>
+        ) : sub && (sub.renews || sub.cancelAtPeriodEnd) ? (
+          <>
+            <p className="panel__big">
+              Member <span className="tag">{sub.trialEndsAt ? 'Free trial' : 'Monthly'}</span>
+            </p>
+            <p className="muted">
+              {sub.cancelAtPeriodEnd
+                ? `Cancelled. You can keep watching every episode until ${longDate(sub.currentPeriodEnd!)}.`
+                : sub.trialEndsAt
+                  ? `Your free trial ends on ${longDate(sub.trialEndsAt)}. Then ${formatPrice(MEMBERSHIP.priceCents)} a month.`
+                  : `${formatPrice(MEMBERSHIP.priceCents)} a month. Next charge on ${longDate(sub.currentPeriodEnd!)}.`}
+            </p>
+            {sub.cancelAtPeriodEnd ? (
+              <button className="btn btn--primary" disabled={busy} onClick={() => setRenewal(true)}>
+                Keep my membership
+              </button>
+            ) : (
+              <button className="btn btn--secondary" disabled={busy} onClick={() => setRenewal(false)}>
+                Cancel membership
+              </button>
+            )}
           </>
         ) : sub && !ended ? (
           <>

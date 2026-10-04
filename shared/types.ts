@@ -34,6 +34,9 @@ export const MEMBERSHIP: Plan = {
 
 export const PLANS: Plan[] = [MEMBERSHIP]
 
+/** Free days before the first monthly charge, for accounts that have never had a trial. */
+export const TRIAL_DAYS = 3
+
 export function getPlan(id: string): Plan | undefined {
   return PLANS.find((p) => p.id === id)
 }
@@ -113,6 +116,8 @@ export interface OrderView {
   checkoutUrl: string | null
   createdAt: number
   paidAt: number | null
+  /** 'subscription' for the checkout that started a monthly membership. */
+  kind?: 'pass' | 'subscription'
 }
 
 export interface SubscriptionView {
@@ -121,6 +126,12 @@ export interface SubscriptionView {
   currentPeriodEnd: number | null
   /** 'card' = paid through Stripe, 'crypto' = paid through BTCPay (or the old NOWPayments). */
   source: 'card' | 'crypto' | 'test' | 'comp'
+  /** Monthly Stripe subscription that will charge again at currentPeriodEnd. */
+  renews?: boolean
+  /** Monthly subscription the member cancelled: access runs to currentPeriodEnd, then stops. */
+  cancelAtPeriodEnd?: boolean
+  /** Set while in the free trial: when the first charge happens. */
+  trialEndsAt?: number | null
 }
 
 export interface Profile {
@@ -139,6 +150,8 @@ export interface Me {
   profiles: Profile[]
   /** False for accounts created with Google/Apple that never set a password. */
   hasPassword?: boolean
+  /** True when this account can still start a free trial. */
+  trialEligible?: boolean
 }
 
 export interface WatchProgress {
@@ -154,6 +167,8 @@ export interface ProfileState {
 
 export interface BillingConfig {
   providers: PaymentProviderInfo[]
+  /** True when monthly subscriptions (Stripe) are available; the Plans page then offers those instead of passes. */
+  subscription: boolean
 }
 
 // ----- Admin -----

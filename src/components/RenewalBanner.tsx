@@ -3,11 +3,11 @@ import { useSession } from '../state/Session'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Passes are prepaid and don't auto-renew, so remind members shortly before access ends. */
+/** Reminds members shortly before access ends: prepaid passes, and monthly memberships they've cancelled. */
 export default function RenewalBanner() {
   const { me } = useSession()
   const sub = me?.subscription
-  if (!sub || sub.source === 'comp' || sub.currentPeriodEnd === null) return null
+  if (!sub || sub.source === 'comp' || sub.currentPeriodEnd === null || sub.renews) return null
   const daysLeft = Math.ceil((sub.currentPeriodEnd - Date.now()) / DAY_MS)
   if (daysLeft > 5) return null
 

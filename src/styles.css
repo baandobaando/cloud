@@ -5049,3 +5049,33 @@ video.feature-hero__preview {
 @media (max-width: 700px) {
   .promo-img { display: none; }
 }
+
+/* ---------- Monthly subscription plan ---------- */
+.sub-plan { display: grid; gap: 1rem; }
+.sub-plan__card {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(255, 36, 67, 0.14), rgba(255, 106, 53, 0.06) 60%, transparent), var(--surface);
+  border: 1px solid rgba(255, 70, 70, 0.35);
+}
+.sub-plan__badge {
+  position: absolute;
+  top: -0.75rem;
+  left: 1.5rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff2443, #ff6a35);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sub-plan__price { display: flex; align-items: baseline; gap: 0.4rem; margin: 0.4rem 0 0.25rem; }
+.sub-plan__price strong { font-family: var(--font-display); font-size: 2.6rem; letter-spacing: -0.03em; }
+.sub-plan__price span { color: var(--text-2); }
+.sub-plan__steps { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.6rem; border-left: 2px solid rgba(255, 70, 70, 0.4); }
+.sub-plan__steps li { padding-left: 0.9rem; color: var(--text-2); font-size: 0.92rem; }
+.sub-plan__steps strong { display: block; color: var(--text); font-size: 0.85rem; }
+.sub-plan__fine { text-align: center; margin: 0; }

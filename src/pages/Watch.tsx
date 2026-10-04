@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import type { EpisodeView as Episode, SeriesDetail as Series } from '../../shared/types'
+import { MEMBERSHIP, formatPrice, type EpisodeView as Episode, type SeriesDetail as Series } from '../../shared/types'
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import Poster from '../components/Poster'
@@ -8,6 +8,7 @@ import Icon from '../components/Icon'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { useVideoSource } from '../useVideoSource'
 import { usePageTitle } from '../usePageTitle'
+import { useTrialOffer } from '../useTrialOffer'
 
 const SEEK_STEP = 10
 const CONTROLS_HIDE_MS = 3000
@@ -546,19 +547,24 @@ function EpisodePlayer(props: PlayerProps) {
  * other browsers get hls.js (loaded on demand) for adaptive 1080p/720p/480p switching.
  */
 function Paywall({ series, episode }: { series: Series; episode: Episode }) {
+  const trialDays = useTrialOffer()
   return (
     <div className="paywall">
       <Poster series={series} variant="wide" showTitle={false} />
       <div className="paywall__body">
         <div className="paywall__lock"><Icon name="lock" size={28} /></div>
-        <h2>Episode {episode.number} is for members</h2>
+        <h2>{trialDays ? `Don't stop now. Episode ${episode.number} is waiting.` : `Episode ${episode.number} is for members`}</h2>
         <p>
-          {series.freeEpisodes > 0 ? `You watched the first ${series.freeEpisodes} free. ` : ''}Become a member to watch all{' '}
-          {series.episodes.length} episodes of <em>{series.title}</em> and every other series, with no coins and no
-          per-episode unlocks. Pay by card, Apple Pay or Google Pay.
+          {trialDays
+            ? `Watch all ${series.episodes.length} episodes of `
+            : `${series.freeEpisodes > 0 ? `You watched the first ${series.freeEpisodes} free. ` : ''}Become a member to watch all ${series.episodes.length} episodes of `}
+          <em>{series.title}</em>
+          {trialDays
+            ? ` and every other series free for ${trialDays} days. Then ${formatPrice(MEMBERSHIP.priceCents)} a month, cancel anytime.`
+            : ' and every other series, with no coins and no per-episode unlocks.'}
         </p>
         <Link to={`/plans?return=${encodeURIComponent(`/watch/${series.id}/${episode.number}`)}`} className="btn btn--accent btn--block">
-          Join for $9.99/month
+          {trialDays ? `Start my ${trialDays}-day free trial` : `Join for ${formatPrice(MEMBERSHIP.priceCents)}/month`}
         </Link>
       </div>
     </div>

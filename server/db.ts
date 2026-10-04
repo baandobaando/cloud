@@ -168,6 +168,20 @@ db.exec(`CREATE TABLE IF NOT EXISTS user_identities (
   PRIMARY KEY (provider, subject)
 )`)
 
+// Monthly Stripe subscriptions: the subscription a member is on, its state, and one free trial per account.
+ensureColumn('subscriptions', 'stripe_customer_id', 'TEXT')
+ensureColumn('subscriptions', 'stripe_subscription_id', 'TEXT')
+ensureColumn('subscriptions', 'status', 'TEXT')
+ensureColumn('subscriptions', 'cancel_at_period_end', 'INTEGER NOT NULL DEFAULT 0')
+ensureColumn('subscriptions', 'trial_end', 'INTEGER')
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_stripe ON subscriptions(stripe_subscription_id) WHERE stripe_subscription_id IS NOT NULL')
+ensureColumn('users', 'trial_used_at', 'INTEGER')
+// 'pass' = prepaid months, 'subscription' = the checkout that started a monthly subscription.
+ensureColumn('orders', 'kind', "TEXT NOT NULL DEFAULT 'pass'")
+// Renewal charges have no order; they're keyed by the processor's invoice id instead.
+ensureColumn('payments', 'provider_ref', 'TEXT')
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_ref ON payments(provider_ref) WHERE provider_ref IS NOT NULL')
+
 /** Runs fn inside a transaction, rolling back on error. */
 export function transaction<T>(fn: () => T): T {
   db.exec('BEGIN')

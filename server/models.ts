@@ -92,17 +92,28 @@ interface SubscriptionRow {
   plan: string
   current_period_end: number | null
   source: string
+  stripe_subscription_id: string | null
+  status: string | null
+  cancel_at_period_end: number
+  trial_end: number | null
 }
 
+/** Stripe subscription states in which the member keeps access. */
+export const LIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing', 'past_due']
+
 export function getSubscription(userId: number): SubscriptionView | null {
-  const row = db.prepare('SELECT plan, current_period_end, source FROM subscriptions WHERE user_id = ?').get(userId) as
-    | SubscriptionRow
-    | undefined
+  const row = db
+    .prepare('SELECT plan, current_period_end, source, stripe_subscription_id, status, cancel_at_period_end, trial_end FROM subscriptions WHERE user_id = ?')
+    .get(userId) as SubscriptionRow | undefined
   if (!row) return null
+  const live = !!row.stripe_subscription_id && LIVE_SUBSCRIPTION_STATUSES.includes(row.status ?? '')
   return {
     plan: row.plan as PlanId,
     currentPeriodEnd: row.current_period_end,
     source: row.source as SubscriptionView['source'],
+    renews: live && !row.cancel_at_period_end,
+    cancelAtPeriodEnd: live && !!row.cancel_at_period_end,
+    trialEndsAt: live && row.status === 'trialing' ? row.trial_end : null,
   }
 }
 

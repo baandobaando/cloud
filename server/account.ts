@@ -1,6 +1,7 @@
 import { Router, type Request } from 'express'
 import type { Me, ProfileState, WatchProgress } from '../shared/types.ts'
 import { nextProfileColor, requireUser } from './auth.ts'
+import { trialEligible } from './subscriptions.ts'
 import { db } from './db.ts'
 import { HttpError, int, str } from './http.ts'
 import { getSubscription, isEntitled } from './models.ts'
@@ -25,6 +26,7 @@ export function buildMe(user: NonNullable<Request['user']>): Me {
     isEntitled: isEntitled(user),
     profiles,
     hasPassword: (db.prepare('SELECT password_hash FROM users WHERE id = ?').get(user.id) as { password_hash: string }).password_hash.startsWith('scrypt$'),
+    trialEligible: trialEligible(user.id),
   }
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { DURATIONS, MEMBERSHIP, formatPrice, priceFor, type BillingConfig, type PaymentProviderId } from '../../shared/types'
+import { DURATIONS, MEMBERSHIP, TRIAL_DAYS, formatPrice, priceFor, type BillingConfig, type PaymentProviderId } from '../../shared/types'
 import { api, errorMessage } from '../api'
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
@@ -27,6 +27,7 @@ export default function Plans() {
 
   if (error) return <main className="page"><ErrorState message={error} onRetry={reload} /></main>
   if (!billing) return <Spinner fullscreen />
+  if (billing.subscription) return <SubscriptionPlan />
 
   const total = priceFor(MEMBERSHIP, months)
   const sub = me?.subscription
@@ -141,6 +142,107 @@ export default function Plans() {
           Priced in USD. You'll finish paying on a secure Stripe page, and access starts as soon as the payment goes
           through.
         </p>
+      </section>
+    </main>
+  )
+}
+
+/** Monthly membership through Stripe: a free trial for new accounts, then billed every month until cancelled. */
+function SubscriptionPlan() {
+  const { me } = useSession()
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const [busy, setBusy] = useState(false)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const sub = me?.subscription
+  const subscribed = !!(sub?.renews || sub?.cancelAtPeriodEnd)
+  // Visitors who aren't signed in haven't used a trial yet either.
+  const trial = !me || !!me.trialEligible
+  const price = formatPrice(MEMBERSHIP.priceCents)
+  const firstCharge = new Date(Date.now() + TRIAL_DAYS * 86_400_000).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })
+
+  const start = async () => {
+    if (!me) {
+      navigate(`/signup?next=${encodeURIComponent(`/plans${params.toString() ? `?${params}` : ''}`)}`)
+      return
+    }
+    setBusy(true)
+    setCheckoutError(null)
+    try {
+      const returnTo = params.get('return')
+      try {
+        if (returnTo?.startsWith('/')) sessionStorage.setItem('reelflix:return', returnTo)
+      } catch {
+        /* storage unavailable: members just land on Home after paying */
+      }
+      const { checkoutUrl } = await api.post<{ orderId: string; checkoutUrl: string }>('/billing/subscription', {})
+      window.location.assign(checkoutUrl)
+    } catch (err) {
+      setCheckoutError(errorMessage(err))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <main className="page page--checkout">
+      <header className="checkout__intro">
+        <span className="eyebrow">BingeTube membership</span>
+        <h1>{trial ? `Watch everything free for ${TRIAL_DAYS} days` : 'Every episode. One price.'}</h1>
+        <p className="muted">
+          {trial
+            ? `Then ${price} a month. Cancel anytime before ${firstCharge} and you won't be charged.`
+            : `${price} a month. Cancel anytime.`}
+        </p>
+        <ul className="perks">
+          {MEMBERSHIP.perks.map((perk) => (
+            <li key={perk}>
+              <Icon name="check" size={16} />
+              {perk}
+            </li>
+          ))}
+        </ul>
+      </header>
+
+      <section className="checkout__box sub-plan">
+        {subscribed ? (
+          <div className="notice">
+            You're already a member{sub?.cancelAtPeriodEnd ? ' (cancelled, access until the end of your current month)' : ''}. You can manage your
+            subscription from your <a href="/account">account page</a>.
+          </div>
+        ) : (
+          <>
+            <div className="sub-plan__card">
+              {trial && <span className="sub-plan__badge">{TRIAL_DAYS} days free</span>}
+              <div className="sub-plan__price">
+                <strong>{trial ? '$0' : price}</strong>
+                <span>{trial ? 'today' : '/ month'}</span>
+              </div>
+              <p className="muted small">
+                {trial ? `${price}/month after your free trial. ` : ''}Renews monthly. Cancel anytime in your account, in two clicks.
+              </p>
+              {trial && (
+                <ol className="sub-plan__steps">
+                  <li>
+                    <strong>Today</strong> Every episode unlocks
+                  </li>
+                  <li>
+                    <strong>Anytime</strong> Cancel from your account page in two clicks
+                  </li>
+                  <li>
+                    <strong>{firstCharge}</strong> {price}/month starts, unless you cancel
+                  </li>
+                </ol>
+              )}
+            </div>
+            <button className="btn btn--accent btn--lg btn--block" disabled={busy} onClick={start}>
+              {busy ? 'Starting checkout…' : trial ? 'Start my free trial' : `Subscribe for ${price}/month`}
+            </button>
+            {checkoutError && <div className="form__error">{checkoutError}</div>}
+            <p className="muted small sub-plan__fine">
+              Secure checkout by Stripe: card, Apple Pay or Google Pay.{trial ? ' A card is needed to start the trial; nothing is charged today.' : ''}
+            </p>
+          </>
+        )}
       </section>
     </main>
   )
