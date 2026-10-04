@@ -153,6 +153,13 @@ export function resolveMediaUrl(stored: string | null): string | null {
     : signCdnUrl({ path, expires: expiryIn(VIDEO_TTL_SEC), tokenPath: `/${videoId}/`, key, mode, host })
 }
 
+/** Signed URL for another file of the same Bunny video, e.g. its animated preview.webp or thumbnail.jpg. */
+export function bunnyFileUrl(stored: string | null, file: string): string | null {
+  if (!stored?.startsWith(BUNNY_PREFIX)) return null
+  const videoId = stored.slice(BUNNY_PREFIX.length).split('/')[0]
+  return resolveMediaUrl(`${BUNNY_PREFIX}${videoId}/${file}`)
+}
+
 // ---------------------------------------------------------------- import helpers
 
 /** Pulls the episode number out of titles like "my-show ep12", "Episode 12" or "E12". */

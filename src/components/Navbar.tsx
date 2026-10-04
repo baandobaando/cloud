@@ -60,7 +60,7 @@ export default function Navbar() {
               to={me ? "/plans" : "/signup?next=/plans"}
               className="btn btn--small btn--accent"
             >
-              Join<span className="hide-phone"> for $9.99</span>
+              <span>Join<span className="hide-phone"> for $9.99</span></span>
             </Link>
           )}
           {me && (

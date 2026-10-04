@@ -54,6 +54,8 @@ export interface SeriesSummary {
   palette: [string, string]
   emoji: string
   posterUrl: string | null
+  /** Short animated preview (Bunny's preview.webp), when the series is hosted on Bunny. */
+  previewUrl?: string | null
   isNew: boolean
   trendingRank: number | null
   freeEpisodes: number
@@ -67,6 +69,8 @@ export interface EpisodeView {
   durationSec: number
   /** Null when the episode is locked for this viewer. */
   videoUrl: string | null
+  /** Still frame for the episode tile; shown even when the episode is locked. */
+  thumbUrl?: string | null
   locked: boolean
 }
 

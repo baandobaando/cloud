@@ -8,7 +8,7 @@ import type {
   SeriesSummary,
   SubscriptionView,
 } from '../shared/types.ts'
-import { resolveMediaUrl } from './bunny.ts'
+import { resolveMediaUrl, bunnyFileUrl } from './bunny.ts'
 import { db } from './db.ts'
 
 export interface SeriesRow {
@@ -57,6 +57,7 @@ export function toSummary(r: SeriesRow): SeriesSummary {
     palette: JSON.parse(r.palette) as [string, string],
     emoji: r.emoji,
     posterUrl: resolveMediaUrl(r.poster_url),
+    previewUrl: bunnyFileUrl(r.poster_url, 'preview.webp'),
     isNew: r.is_new === 1,
     trendingRank: r.trending_rank,
     freeEpisodes: r.free_episodes,
@@ -79,6 +80,7 @@ export function toEpisodeView(r: EpisodeRow, unlocked: boolean): EpisodeView {
     title: r.title,
     durationSec: r.duration_sec,
     videoUrl: unlocked ? resolveMediaUrl(r.video_url) : null,
+    thumbUrl: bunnyFileUrl(r.video_url, 'thumbnail.jpg'),
     locked: !unlocked,
   }
 }

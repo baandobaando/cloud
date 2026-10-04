@@ -35,6 +35,7 @@ const PATHS = {
   refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
   external: 'M14 4h6v6M20 4l-9 9M18 14v6H4V6h6',
   phone: 'M7 2h10v20H7zM11 18h2',
+  clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',
   unlock: 'M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 0 1 6.8-1.2',
   bitcoin: 'M8 5h6a3 3 0 0 1 0 6H8zM8 11h7a3 3 0 0 1 0 6H8zM8 5v12M10 3v2M13 3v2M10 17v2M13 17v2',
   logout: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10',

@@ -103,8 +103,28 @@ export default function Hero({ items }: { items: SeriesSummary[] }) {
           ) : (
             <span className="scard__fallback">{series.title}</span>
           )}
+          {series.previewUrl && <HeroPreview key={series.previewUrl} src={series.previewUrl} />}
+          <span className="feature-hero__preview-tag" aria-hidden>
+            <Icon name="play" size={10} /> Preview
+          </span>
         </Link>
       </div>
     </section>
+  )
+}
+
+/** The moving preview fades in over the still cover once it has loaded, so a slow connection never shows a blank card. */
+function HeroPreview({ src }: { src: string }) {
+  const [ready, setReady] = useState(false)
+  const [failed, setFailed] = useState(false)
+  if (failed) return null
+  return (
+    <img
+      className={`feature-hero__preview ${ready ? 'feature-hero__preview--on' : ''}`}
+      src={src}
+      alt=""
+      onLoad={() => setReady(true)}
+      onError={() => setFailed(true)}
+    />
   )
 }
