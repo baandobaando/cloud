@@ -1,29 +1,26 @@
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import type { SeriesSummary } from '../../shared/types'
 import { useSession } from '../state/Session'
 import BrandMark from './BrandMark'
 
 /**
- * Six cover slots fanned out on each side of the pitch, laid out like the Facebook cover art (positions are
- * percentages of the banner). Front slots get the two most popular series, then the outer, then the inner pair.
- * Hovering a cover lifts it out of the shade; the inner two also slide outward so they never cover the copy.
+ * The six covers from the Facebook cover art, fanned out on each side of the pitch (positions are percentages of the
+ * banner). Hovering a cover lifts it out of the shade and clicking opens its series; the inner two also slide outward
+ * so they never cover the copy.
  */
-const SLOTS: { pick: number; left: number; top: number; rot: number; scale: number; front?: boolean; dim: number; dx?: number }[] = [
-  { pick: 2, left: 22.41, top: 26.7, rot: -12, scale: 0.92, dim: 0.75 },
-  { pick: 0, left: 27.01, top: 20.9, rot: -5, scale: 1, front: true, dim: 1 },
-  { pick: 4, left: 31.61, top: 30.1, rot: 4, scale: 0.95, dim: 0.55, dx: -38 },
-  { pick: 5, left: 61.67, top: 30.1, rot: -4, scale: 0.95, dim: 0.55, dx: 38 },
-  { pick: 1, left: 65.91, top: 20.9, rot: 5, scale: 1, front: true, dim: 1 },
-  { pick: 3, left: 70.51, top: 26.7, rot: 12, scale: 0.92, dim: 0.75 },
+const CARDS: { img: string; id: string; title: string; left: number; top: number; rot: number; scale: number; front?: boolean; dim: number; dx?: number }[] = [
+  { img: '16', id: 'hands-off-my-girl-dragon-queen-returns', title: 'Hands Off my Girl: Dragon Queen Returns', left: 22.41, top: 26.7, rot: -12, scale: 0.92, dim: 0.75 },
+  { img: '1', id: 'he-gave-our-baby-to-his-mistress-then-i-was-reborn', title: 'He Gave Our Baby to His Mistress, Then I Was Reborn', left: 27.01, top: 20.9, rot: -5, scale: 1, front: true, dim: 1 },
+  { img: '3', id: 'he-divorced-me-but-i-m-the-elven-princess', title: "He Divorced Me, But I'm the Elven Princess", left: 31.61, top: 30.1, rot: 4, scale: 0.95, dim: 0.55, dx: -38 },
+  { img: '7', id: 'he-cheated-so-i-slept-with-his-brother', title: 'He Cheated, So I Slept With His Brother', left: 61.67, top: 30.1, rot: -4, scale: 0.95, dim: 0.55, dx: 38 },
+  { img: '36', id: 'get-out-of-my-bugatti', title: 'Get Out of My Bugatti', left: 65.91, top: 20.9, rot: 5, scale: 1, front: true, dim: 1 },
+  { img: '18', id: 'he-begs-for-the-heart-he-broke-120-times', title: 'He Begs for the Heart He Broke 120 Times', left: 70.51, top: 26.7, rot: 12, scale: 0.92, dim: 0.75 },
 ]
 
 /** The brand banner at the top of the home page (desktop and tablet), shown to anyone who isn't a member yet. */
-export default function PromoBanner({ catalog }: { catalog: SeriesSummary[] }) {
+export default function PromoBanner() {
   const { me } = useSession()
   if (me?.isEntitled) return null
-  const covers = catalog.filter((s) => s.posterUrl).slice(0, SLOTS.length)
-  if (covers.length < SLOTS.length) return null
   const to = me ? '/plans?return=/' : '/signup'
 
   return (
@@ -36,22 +33,17 @@ export default function PromoBanner({ catalog }: { catalog: SeriesSummary[] }) {
       </svg>
       <div className="promo-img__band">
         <div className="promo-img__glow" aria-hidden />
-        {SLOTS.map((slot) => {
-          const s = covers[slot.pick]
-          return (
-            <Link
-              key={s.id}
-              to={`/title/${s.id}`}
-              className={`promo-img__card${slot.front ? ' promo-img__card--front' : ''}`}
-              style={
-                { left: `${slot.left}%`, top: `${slot.top}%`, '--rot': `${slot.rot}deg`, '--scale': slot.scale, '--dim': slot.dim, '--dx': `${slot.dx ?? 0}%` } as CSSProperties
-              }
-              aria-label={s.title}
-            >
-              <img src={s.posterUrl!} alt="" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
-            </Link>
-          )
-        })}
+        {CARDS.map((c) => (
+          <Link
+            key={c.id}
+            to={`/title/${c.id}`}
+            className={`promo-img__card${c.front ? ' promo-img__card--front' : ''}`}
+            style={{ left: `${c.left}%`, top: `${c.top}%`, '--rot': `${c.rot}deg`, '--scale': c.scale, '--dim': c.dim, '--dx': `${c.dx ?? 0}%` } as CSSProperties}
+            aria-label={c.title}
+          >
+            <img src={`/promo/cards/${c.img}.webp`} alt="" />
+          </Link>
+        ))}
         <div className="promo-img__shade" aria-hidden />
         <div className="promo-img__center">
           <div className="promo-img__logo">

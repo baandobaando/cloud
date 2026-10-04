@@ -5043,7 +5043,7 @@ video.feature-hero__preview {
   transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.25, 1.25), opacity 0.3s, box-shadow 0.3s, filter 0.3s, z-index 0s 0.2s;
 }
 .promo-img__card--front { z-index: 2; }
-.promo-img__card img { display: block; width: 100%; height: 150%; object-fit: cover; object-position: 50% 0; } /* top of the frame: keeps burned-in subtitles out */
+.promo-img__card img { display: block; width: 100%; height: 100%; object-fit: cover; }
 /* Hover: the cover straightens, lifts and comes out of the shade, glowing. */
 .promo-img__card:hover,
 .promo-img__card:focus-visible {
