@@ -36,6 +36,20 @@ export default function Hero({ items }: { items: SeriesSummary[] }) {
     >
       <div className="feature-hero__wash" aria-hidden />
       {image && <div key={series.id} className="feature-hero__ambient" style={{ backgroundImage: `url("${image}")` }} aria-hidden />}
+      {items.length > 1 && (
+        <>
+          <button
+            className="hero-arrow hero-arrow--prev"
+            onClick={() => setIndex((i) => (i - 1 + items.length) % items.length)}
+            aria-label="Previous featured series"
+          >
+            <Icon name="left" size={22} />
+          </button>
+          <button className="hero-arrow hero-arrow--next" onClick={() => setIndex((i) => (i + 1) % items.length)} aria-label="Next featured series">
+            <Icon name="right" size={22} />
+          </button>
+        </>
+      )}
       <div className="feature-hero__inner">
         <div className="feature-hero__copy" key={series.id}>
           <span className="hero-badge">
