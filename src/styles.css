@@ -4989,31 +4989,108 @@ video.feature-hero__preview {
 }
 
 /* ---------- Promo banner (top of home, non-members) ---------- */
-/* The brand banner image (the same art as the Facebook cover) in a rounded card, with the sign-up button over its
-   empty lower band. Desktop and tablet only; phones go straight to the featured show. */
+/* Built at the proportions of the Facebook cover art (1640 x 412 after cropping), so every size is in container
+   units: 1cqw = 1% of the banner's width. Rounded "( )" ends. Desktop and tablet only. */
 .promo-img {
   position: relative;
+  isolation: isolate;
+  container-type: inline-size;
   width: min(1320px, calc(100% - 2 * var(--gutter)));
+  aspect-ratio: 1640 / 412;
   margin: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 12px) auto 0;
-  border-radius: 180px / 50%; /* curved ends, like ( ) */
+  border-radius: 180px / 50%;
   overflow: hidden;
   background: #09090b;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 30px 80px rgba(255, 36, 67, 0.12);
+  font-family: var(--font-display);
 }
-.promo-img__art,
-.promo-img__art img {
-  display: block;
-  width: 100%;
+.promo-img__glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(40% 113.6% at 50% 54.5%, rgba(255, 36, 67, 0.32), transparent 70%),
+    radial-gradient(30% 91% at 50% 153%, rgba(255, 138, 53, 0.35), transparent 70%),
+    radial-gradient(25% 75.8% at 0% -21%, rgba(255, 36, 67, 0.18), transparent 70%),
+    radial-gradient(25% 75.8% at 100% 130%, rgba(255, 106, 53, 0.18), transparent 70%);
 }
-.promo-img__art img {
-  height: clamp(280px, 24vw, 380px);
-  object-fit: cover;
-  object-position: 50% 50%;
+/* Darkens toward the middle so the inner covers sink behind the copy, then a second glow on top. */
+.promo-img__shade {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 113.6% at 50% 54.5%, rgba(255, 36, 67, 0.28), transparent 70%),
+    radial-gradient(30% 91% at 50% 153%, rgba(255, 138, 53, 0.3), transparent 70%),
+    linear-gradient(90deg, rgba(9, 9, 11, 0) 29.1%, rgba(9, 9, 11, 0.85) 38.4%, #09090b 41.9%, #09090b 58.1%, rgba(9, 9, 11, 0.85) 61.6%, rgba(9, 9, 11, 0) 70.9%);
+}
+.promo-img__card {
+  position: absolute;
+  z-index: 1;
+  width: 7.073%;
+  height: 42.25%;
+  border-radius: 0.64cqw;
+  overflow: hidden;
+  opacity: var(--dim);
+  transform: rotate(var(--rot)) scale(var(--scale));
+  box-shadow: 0 0.9cqw 2.1cqw rgba(0, 0, 0, 0.6), 0 0 0 0.07cqw rgba(255, 255, 255, 0.08);
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.25, 1.25), opacity 0.3s, box-shadow 0.3s, filter 0.3s, z-index 0s 0.2s;
+}
+.promo-img__card--front { z-index: 2; }
+.promo-img__card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Hover: the cover straightens, lifts and comes out of the shade, glowing. */
+.promo-img__card:hover,
+.promo-img__card:focus-visible {
+  z-index: 5;
+  opacity: 1;
+  transform: translate(var(--dx, 0%), -9%) rotate(0deg) scale(calc(var(--scale) * 1.14));
+  box-shadow: 0 1.4cqw 3cqw rgba(0, 0, 0, 0.7), 0 0 2cqw rgba(255, 60, 60, 0.55), 0 0 0 0.12cqw rgba(255, 106, 53, 0.9);
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.25, 1.25), opacity 0.2s, box-shadow 0.3s, z-index 0s;
+}
+/* The other covers dim while one is picked. */
+.promo-img:has(.promo-img__card:hover) .promo-img__card:not(:hover) { filter: brightness(0.7); }
+.promo-img__center {
+  position: absolute;
+  left: 50%;
+  top: 54.5%;
+  z-index: 4;
+  transform: translate(-50%, -62%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.78cqw;
+  color: #fff;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.promo-img__logo { display: flex; align-items: center; gap: 0.78cqw; }
+.promo-img__logo .brand-mark { width: 3.68cqw; height: 3.68cqw; }
+.promo-img__word { font-weight: 800; font-size: 3.2cqw; letter-spacing: -0.045em; line-height: 1; }
+.promo-img__word span,
+.promo-img__tag b {
+  background: linear-gradient(90deg, #ff2443, #ff6a35);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.promo-img__tag b { background-image: linear-gradient(90deg, #ffb23d, #ff6a35); }
+.promo-img__tag { margin: 0; font-weight: 800; font-size: 1.42cqw; letter-spacing: -0.02em; }
+.promo-img__chips { display: flex; gap: 0.42cqw; margin: 0; padding: 0; list-style: none; }
+.promo-img__chips li {
+  font-weight: 600;
+  font-size: 0.74cqw;
+  color: #e8e8ec;
+  padding: 0.35cqw 0.71cqw;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 .promo-img__cta {
   position: absolute;
   left: 50%;
-  bottom: 10%;
+  bottom: 9%;
+  z-index: 4;
   transform: translateX(-50%);
 }
 /* The featured show sits right under the banner, so it no longer needs room for the navbar. */
@@ -5022,4 +5099,7 @@ video.feature-hero__preview {
 }
 @media (max-width: 700px) {
   .promo-img { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .promo-img__card { transition: none; }
 }
