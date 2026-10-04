@@ -134,6 +134,17 @@ ensureColumn('series', 'bunny_collection_id', 'TEXT')
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_series_bunny ON series(bunny_collection_id) WHERE bunny_collection_id IS NOT NULL')
 // Bunny collections an admin deleted from the site; the sync skips them until restored.
 db.exec('CREATE TABLE IF NOT EXISTS bunny_hidden (collection_id TEXT PRIMARY KEY, title TEXT NOT NULL, hidden_at INTEGER NOT NULL)')
+// One row per profile per episode per day, for watch analytics (progress only keeps the latest position).
+db.exec(`CREATE TABLE IF NOT EXISTS episode_views (
+  profile_id INTEGER NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  series_id TEXT NOT NULL REFERENCES series(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  episode_number INTEGER NOT NULL,
+  day INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (profile_id, series_id, episode_number, day)
+)`)
+db.exec('CREATE INDEX IF NOT EXISTS idx_views_created ON episode_views(created_at)')
+db.exec('CREATE INDEX IF NOT EXISTS idx_users_created ON users(created_at)')
 // Google / Apple accounts linked to a user (subject = the provider's stable user id).
 db.exec(`CREATE TABLE IF NOT EXISTS user_identities (
   provider TEXT NOT NULL,

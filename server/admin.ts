@@ -1,3 +1,4 @@
+import { buildAnalytics } from './analytics.ts'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -188,6 +189,10 @@ adminRouter.get('/stats', (_req, res) => {
     ).map((p) => ({ id: p.id, email: p.email, amountCents: p.amount_cents, plan: p.plan, provider: p.provider, createdAt: p.created_at })),
   }
   res.json(stats)
+})
+
+adminRouter.get('/analytics', (req, res) => {
+  res.json(buildAnalytics(String(req.query.range ?? '30d')))
 })
 
 // ----- Series -----

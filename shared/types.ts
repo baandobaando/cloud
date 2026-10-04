@@ -195,6 +195,46 @@ export interface AdminStats {
   }[]
 }
 
+export const ANALYTICS_RANGES = [
+  { id: '7d', label: '7D', days: 7, buckets: 7 },
+  { id: '30d', label: '30D', days: 30, buckets: 30 },
+  { id: '90d', label: '90D', days: 90, buckets: 45 },
+  { id: '12m', label: '12M', days: 360, buckets: 12 },
+] as const
+export type AnalyticsRange = (typeof ANALYTICS_RANGES)[number]['id']
+
+/** A number for the selected period, the same number for the period before it, and its points over time. */
+export interface Metric {
+  value: number
+  previous: number
+  series: number[]
+}
+
+export interface AdminAnalytics {
+  range: AnalyticsRange
+  /** Start time of each chart bucket (ms), oldest first. */
+  buckets: number[]
+  bucketMs: number
+  kpis: {
+    revenueCents: Metric
+    signups: Metric
+    newMembers: Metric
+    payments: Metric
+    views: Metric
+    activeViewers: Metric
+    /** New members ÷ signups in the period, as a percentage. */
+    conversion: { value: number; previous: number }
+    expired: { value: number; previous: number }
+  }
+  totals: { users: number; activeMembers: number; mrrCents: number; seriesPublished: number; seriesDraft: number; episodes: number }
+  funnel: { label: string; value: number }[]
+  passes: { months: number; count: number; revenueCents: number }[]
+  currencies: { currency: string; count: number; revenueCents: number }[]
+  topSeries: { id: string; title: string; views: number; viewers: number }[]
+  expiringSoon: { email: string; endsAt: number }[]
+  recentPayments: AdminStats['recentPayments']
+}
+
 export interface AdminUser {
   id: number
   email: string

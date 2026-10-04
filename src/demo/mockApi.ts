@@ -2,6 +2,7 @@
 // It mirrors the real server's routes and rules closely enough to click through every flow;
 // data lives in this browser only.
 import {
+  ANALYTICS_RANGES,
   DURATIONS,
   GENRES,
   MEMBERSHIP,
@@ -383,6 +384,7 @@ function createUser(db: DB, email: string, password: string, name: string): User
 
 type Handler = (db: DB, m: RegExpMatchArray, body: Record<string, unknown>) => unknown
 const routes: [string, RegExp, Handler][] = []
+let lastQuery = ''
 const on = (method: string, pattern: string, handler: Handler) =>
   routes.push([method, new RegExp('^' + pattern.replace(/:(\w+)/g, '([^/]+)') + '$'), handler])
 
@@ -532,6 +534,54 @@ on('POST', '/billing/test/:id/pay', (db, m) => {
 })
 
 // Admin
+// The demo has no history, so the dashboard shows a believable made-up trend for each range.
+on('GET', '/admin/analytics', (db) => {
+  requireAdmin(db)
+  const range = ANALYTICS_RANGES.find((r) => r.id === new URLSearchParams(lastQuery).get('range')) ?? ANALYTICS_RANGES[1]
+  const DAY = 86_400_000
+  const bucketMs = (range.days * DAY) / range.buckets
+  const start = Math.ceil(Date.now() / DAY) * DAY - range.days * DAY
+  const buckets = Array.from({ length: range.buckets }, (_, i) => start + i * bucketMs)
+  const per = bucketMs / DAY
+  const wave = (base: number, i: number) => Math.max(0, Math.round(base * per * (0.75 + i / range.buckets / 2 + 0.2 * Math.sin(i * 1.7))))
+  const metric = (base: number) => {
+    const series = buckets.map((_, i) => wave(base, i))
+    const value = series.reduce((a, b) => a + b, 0)
+    return { value, previous: Math.round(value * 0.86), series }
+  }
+  const signups = metric(14)
+  const members = metric(2.3)
+  const revenue = { ...metric(2.3 * 1650) }
+  const active = Object.values(db.subs).filter(isActive).length
+  return {
+    range: range.id,
+    buckets,
+    bucketMs,
+    kpis: {
+      revenueCents: revenue,
+      signups,
+      newMembers: members,
+      payments: members,
+      views: metric(58),
+      activeViewers: metric(11),
+      conversion: { value: (members.value / Math.max(1, signups.value)) * 100, previous: 15.1 },
+      expired: { value: Math.round(members.value * 0.3), previous: Math.round(members.value * 0.34) },
+    },
+    totals: { users: db.users.length, activeMembers: active, mrrCents: active * MEMBERSHIP.priceCents, seriesPublished: db.series.filter((s) => s.published).length, seriesDraft: db.series.filter((s) => !s.published).length, episodes: db.series.reduce((n, s) => n + s.episodes.length, 0) },
+    funnel: [
+      { label: 'Signed up', value: signups.value },
+      { label: 'Watched an episode', value: Math.round(signups.value * 0.71) },
+      { label: 'Started checkout', value: Math.round(signups.value * 0.29) },
+      { label: 'Paid', value: members.value },
+    ],
+    passes: DURATIONS.map((d, i) => ({ months: d.months, count: Math.round(members.value * [0.55, 0.35, 0.1][i]), revenueCents: Math.round(revenue.value * [0.25, 0.4, 0.35][i]) })),
+    currencies: [['USDT', 0.44], ['BTC', 0.22], ['LTC', 0.18], ['ETH', 0.1], ['SOL', 0.06]].map(([c, f]) => ({ currency: c as string, count: Math.round(members.value * (f as number)), revenueCents: Math.round(revenue.value * (f as number)) })),
+    topSeries: db.series.slice(0, 6).map((s, i) => ({ id: s.id, title: s.title, views: 120 - i * 14, viewers: 30 - i * 3 })),
+    expiringSoon: [],
+    recentPayments: [],
+  }
+})
+
 on('GET', '/admin/stats', (db) => {
   requireAdmin(db)
   const now = Date.now()
@@ -690,7 +740,6 @@ on('POST', '/admin/orders/:id/mark-paid', (db, m) => {
   return { ok: true }
 })
 
-let lastQuery = ''
 
 /** Handles a JSON API call the same way the real server would. */
 export async function mockRequest<T>(method: string, url: string, body?: unknown): Promise<T> {

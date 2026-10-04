@@ -107,5 +107,13 @@ accountRouter.put('/profiles/:profileId/progress/:seriesId', (req, res) => {
      ON CONFLICT (profile_id, series_id) DO UPDATE SET
        episode_number = excluded.episode_number, position = excluded.position, updated_at = excluded.updated_at`,
   ).run(id, seriesId, episodeNumber, position, Date.now())
+  const now = Date.now()
+  db.prepare('INSERT OR IGNORE INTO episode_views (profile_id, series_id, episode_number, day, created_at) VALUES (?, ?, ?, ?, ?)').run(
+    id,
+    seriesId,
+    episodeNumber,
+    Math.floor(now / 86_400_000),
+    now,
+  )
   res.json({ ok: true })
 })
