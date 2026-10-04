@@ -15,9 +15,10 @@ const RANGE = 24
 export default function Title() {
   const { seriesId = '' } = useParams()
   const navigate = useNavigate()
-  const { data: series, error, reload } = useApi<SeriesDetail>(`/series/${encodeURIComponent(seriesId)}`)
-  usePageTitle(series?.id === seriesId ? series.title : null)
   const { me, catalog, myList, toggleMyList, progress } = useSession()
+  // Re-fetched when membership changes (e.g. right after paying) so episodes unlock without a page reload.
+  const { data: series, error, reload } = useApi<SeriesDetail>(`/series/${encodeURIComponent(seriesId)}${me?.isEntitled ? '?member' : ''}`)
+  usePageTitle(series?.id === seriesId ? series.title : null)
   const [failed, setFailed] = useState(false)
 
   if (error) {
@@ -68,7 +69,7 @@ export default function Title() {
               <span>
                 <Icon name="clock" size={15} /> {totalMinutes} min
               </span>
-              {series.freeEpisodes > 0 && <span className="detail__free">{series.freeEpisodes} free</span>}
+              {!me?.isEntitled && series.freeEpisodes > 0 && <span className="detail__free">{series.freeEpisodes} free</span>}
             </div>
             {series.tagline && <p className="detail__tagline">{series.tagline}</p>}
             {series.synopsis && series.synopsis !== series.tagline && <p className="detail__synopsis">{series.synopsis}</p>}
@@ -135,6 +136,7 @@ function formatDuration(sec: number) {
 
 /** Episode tiles with a still from each episode, split into tabs of 24 for long series. */
 function Episodes({ series, resumeEp }: { series: SeriesDetail; resumeEp?: number }) {
+  const { me } = useSession()
   const total = series.episodes.length
   const ranges = Math.ceil(total / RANGE)
   const [range, setRange] = useState(() => (resumeEp ? Math.min(ranges - 1, Math.floor((resumeEp - 1) / RANGE)) : 0))
@@ -179,7 +181,7 @@ function Episodes({ series, resumeEp }: { series: SeriesDetail; resumeEp?: numbe
                     <Icon name="lock" size={14} />
                   </span>
                 ) : (
-                  ep.number <= series.freeEpisodes && <span className="ep-tile__free">Free</span>
+                  !me?.isEntitled && ep.number <= series.freeEpisodes && <span className="ep-tile__free">Free</span>
                 )}
                 <span className="ep-tile__play">
                   <Icon name="play" size={18} />

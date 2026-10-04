@@ -8,6 +8,15 @@ export function useApi<T>(url: string | null) {
   const [loading, setLoading] = useState(url !== null)
   const [nonce, setNonce] = useState(0)
 
+  // A different URL is a different thing: drop the old result so a page never shows the previous item's data
+  // (or keeps it when the new request fails). A plain reload keeps the current data on screen.
+  const [loadedUrl, setLoadedUrl] = useState(url)
+  if (loadedUrl !== url) {
+    setLoadedUrl(url)
+    setData(undefined)
+    setError(null)
+  }
+
   useEffect(() => {
     if (url === null) return
     let cancelled = false

@@ -72,7 +72,7 @@ export default function Hero({ items }: { items: SeriesSummary[] }) {
           <p className="feature-hero__meta">
             <span className="pill">{series.rating}</span>
             {series.genres.join(' · ')} <span aria-hidden>·</span> {series.episodeCount} episodes
-            <span className="feature-hero__free">First {series.freeEpisodes} free</span>
+            {!me?.isEntitled && series.freeEpisodes > 0 && <span className="feature-hero__free">First {series.freeEpisodes} free</span>}
           </p>
           {(series.tagline || series.synopsis) && <p className="feature-hero__text">{series.tagline || series.synopsis}</p>}
           <div className="actions">

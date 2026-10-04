@@ -54,7 +54,14 @@ export default function Account() {
 
       <section className="panel">
         <h2>Membership</h2>
-        {sub && !ended ? (
+        {me?.isAdmin && !(sub && !ended) ? (
+          <>
+            <p className="panel__big">
+              Full access <span className="tag">Admin</span>
+            </p>
+            <p className="muted">Admin accounts can watch every episode, the same as a paying member.</p>
+          </>
+        ) : sub && !ended ? (
           <>
             <p className="panel__big">
               Member <span className="tag">{sub.source === 'comp' ? 'Complimentary' : sub.source === 'test' ? 'Test' : sub.source === 'card' ? 'Prepaid pass' : 'Crypto pass'}</span>

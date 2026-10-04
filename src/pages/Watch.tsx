@@ -16,7 +16,9 @@ const NEXT_COUNTDOWN = 5
 /** Episode player: swipe or scroll between episodes, with full playback controls on each. */
 export default function Watch() {
   const { seriesId = '', episode = '1' } = useParams()
-  const { data: series, error, reload } = useApi<Series>(`/series/${encodeURIComponent(seriesId)}`)
+  const { me } = useSession()
+  // Re-fetched when membership changes (e.g. right after paying) so episodes unlock without a page reload.
+  const { data: series, error, reload } = useApi<Series>(`/series/${encodeURIComponent(seriesId)}${me?.isEntitled ? '?member' : ''}`)
   usePageTitle(series?.id === seriesId ? `${series.title} · Episode ${episode}` : null)
   if (error) return <NotFound message={error} onRetry={reload} />
   if (!series || series.id !== seriesId) return <div className="watch"><Spinner fullscreen /></div>
