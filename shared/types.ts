@@ -54,8 +54,8 @@ export interface SeriesSummary {
   palette: [string, string]
   emoji: string
   posterUrl: string | null
-  /** Short animated preview (Bunny's preview.webp), when the series is hosted on Bunny. */
-  previewUrl?: string | null
+  /** Episode 1's stream, played muted as a preview on the home page (only set when episode 1 is free). */
+  trailerUrl?: string | null
   isNew: boolean
   trendingRank: number | null
   freeEpisodes: number

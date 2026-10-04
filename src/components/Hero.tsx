@@ -1,9 +1,10 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { SeriesSummary } from '../../shared/types'
 import { useSession } from '../state/Session'
 import Icon from './Icon'
 import { useRetryImage } from './useRetryImage'
+import { useVideoSource } from '../useVideoSource'
 
 const ROTATE_MS = 9000
 
@@ -103,7 +104,7 @@ export default function Hero({ items }: { items: SeriesSummary[] }) {
           ) : (
             <span className="scard__fallback">{series.title}</span>
           )}
-          {series.previewUrl && <HeroPreview key={series.previewUrl} src={series.previewUrl} />}
+          {series.trailerUrl && <HeroPreview key={series.id} src={series.trailerUrl} />}
           <span className="feature-hero__preview-tag" aria-hidden>
             <Icon name="play" size={10} /> Preview
           </span>
@@ -113,17 +114,35 @@ export default function Hero({ items }: { items: SeriesSummary[] }) {
   )
 }
 
-/** The moving preview fades in over the still cover once it has loaded, so a slow connection never shows a blank card. */
+/** Episode 1 plays muted and looping over the still cover, fading in once frames are actually showing. */
 function HeroPreview({ src }: { src: string }) {
+  const ref = useRef<HTMLVideoElement>(null)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    // React doesn't reliably set the muted attribute; iOS only autoplays inline video that is muted.
+    const v = ref.current
+    if (v) {
+      v.muted = true
+      v.defaultMuted = true
+    }
+  }, [])
+  useVideoSource(ref, failed ? null : src, () => ref.current?.play().catch(() => {}))
   if (failed) return null
   return (
-    <img
+    <video
+      ref={ref}
       className={`feature-hero__preview ${ready ? 'feature-hero__preview--on' : ''}`}
-      src={src}
-      alt=""
-      onLoad={() => setReady(true)}
+      muted
+      playsInline
+      autoPlay
+      loop
+      preload="auto"
+      onLoadedMetadata={(e) => {
+        // Skip the opening seconds, which are often a title card.
+        if (e.currentTarget.duration > 20) e.currentTarget.currentTime = 3
+      }}
+      onPlaying={() => setReady(true)}
       onError={() => setFailed(true)}
     />
   )

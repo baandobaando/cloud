@@ -6,6 +6,7 @@ import { useApi } from '../useApi'
 import Poster from '../components/Poster'
 import Icon from '../components/Icon'
 import { ErrorState, Spinner } from '../components/Feedback'
+import { useVideoSource } from '../useVideoSource'
 
 const SEEK_STEP = 10
 const CONTROLS_HIDE_MS = 3000
@@ -540,47 +541,6 @@ function EpisodePlayer(props: PlayerProps) {
  * Points the <video> at the episode. Bunny serves HLS (.m3u8): Safari plays it natively,
  * other browsers get hls.js (loaded on demand) for adaptive 1080p/720p/480p switching.
  */
-function useVideoSource(videoRef: RefObject<HTMLVideoElement | null>, url: string | null, onReady: () => void) {
-  const readyRef = useRef(onReady)
-  readyRef.current = onReady
-
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !url) return
-    const isHls = /\.m3u8($|\?)/.test(url) || url.includes('/playlist.m3u8')
-    if (!isHls || video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = url
-      return () => {
-        video.removeAttribute('src')
-        video.load()
-      }
-    }
-    let hls: { destroy: () => void } | null = null
-    let cancelled = false
-    import('hls.js').then(({ default: Hls }) => {
-      if (cancelled) return
-      if (!Hls.isSupported()) {
-        video.src = url
-        return
-      }
-      const instance = new Hls({ capLevelToPlayerSize: true, startLevel: -1 })
-      instance.on(Hls.Events.MANIFEST_PARSED, () => readyRef.current())
-      instance.on(Hls.Events.ERROR, (_e, data) => {
-        if (!data.fatal) return
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) instance.startLoad()
-        else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) instance.recoverMediaError()
-      })
-      instance.loadSource(url)
-      instance.attachMedia(video)
-      hls = instance
-    })
-    return () => {
-      cancelled = true
-      hls?.destroy()
-    }
-  }, [videoRef, url])
-}
-
 function Paywall({ series, episode }: { series: Series; episode: Episode }) {
   return (
     <div className="paywall">

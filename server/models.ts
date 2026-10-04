@@ -29,6 +29,7 @@ export interface SeriesRow {
   created_at: number
   updated_at: number
   episode_count: number
+  first_video_url?: string | null
   bunny_collection_id?: string | null
 }
 
@@ -42,7 +43,8 @@ export interface EpisodeRow {
 }
 
 export const SERIES_SELECT = `
-  SELECT s.*, (SELECT COUNT(*) FROM episodes e WHERE e.series_id = s.id) AS episode_count
+  SELECT s.*, (SELECT COUNT(*) FROM episodes e WHERE e.series_id = s.id) AS episode_count,
+    (SELECT e.video_url FROM episodes e WHERE e.series_id = s.id ORDER BY e.number LIMIT 1) AS first_video_url
   FROM series s`
 
 export function toSummary(r: SeriesRow): SeriesSummary {
@@ -57,7 +59,8 @@ export function toSummary(r: SeriesRow): SeriesSummary {
     palette: JSON.parse(r.palette) as [string, string],
     emoji: r.emoji,
     posterUrl: resolveMediaUrl(r.poster_url),
-    previewUrl: bunnyFileUrl(r.poster_url, 'preview.webp'),
+    // Episode 1 doubles as the muted hero preview, but only when it's free to watch anyway.
+    trailerUrl: r.free_episodes > 0 ? resolveMediaUrl(r.first_video_url ?? null) : null,
     isNew: r.is_new === 1,
     trendingRank: r.trending_rank,
     freeEpisodes: r.free_episodes,
