@@ -10,10 +10,7 @@ export default function PromoBanner() {
   return (
     <section className="promo-img" aria-label="Join BingeTube">
       <Link to={to} className="promo-img__art" tabIndex={-1}>
-        <picture>
-          <source media="(max-width: 700px)" srcSet="/promo/banner-mobile.webp" />
-          <img src="/promo/banner.webp" alt="BingeTube: #1 for short drama. No ads, no coins, new episodes daily." fetchPriority="high" />
-        </picture>
+        <img src="/promo/banner.webp" alt="BingeTube: #1 for short drama. No ads, no coins, new episodes daily." />
       </Link>
       <Link to={to} className="btn btn--accent btn--lg promo-img__cta">
         {me ? 'Unlock every episode' : 'Start watching free'}

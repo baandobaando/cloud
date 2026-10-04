@@ -4989,11 +4989,16 @@ video.feature-hero__preview {
 }
 
 /* ---------- Promo banner (top of home, non-members) ---------- */
-/* The brand banner image (the same art as the Facebook cover), with the sign-up button over its empty lower band. */
+/* The brand banner image (the same art as the Facebook cover) in a rounded card, with the sign-up button over its
+   empty lower band. Desktop and tablet only; phones go straight to the featured show. */
 .promo-img {
   position: relative;
-  margin-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+  width: min(1320px, calc(100% - 2 * var(--gutter)));
+  margin: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 12px) auto 0;
+  border-radius: 180px / 50%; /* curved ends, like ( ) */
+  overflow: hidden;
   background: #09090b;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 30px 80px rgba(255, 36, 67, 0.12);
 }
 .promo-img__art,
 .promo-img__art img {
@@ -5001,27 +5006,20 @@ video.feature-hero__preview {
   width: 100%;
 }
 .promo-img__art img {
-  height: clamp(300px, 26vw, 420px);
+  height: clamp(280px, 24vw, 380px);
   object-fit: cover;
   object-position: 50% 50%;
-  /* Blend the art's edges into the page instead of showing a box. */
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 14%, #000 82%, transparent);
-  mask-image: linear-gradient(180deg, transparent, #000 14%, #000 82%, transparent);
 }
 .promo-img__cta {
   position: absolute;
   left: 50%;
-  bottom: 9%;
+  bottom: 10%;
   transform: translateX(-50%);
 }
-/* The featured show sits right under the banner, so it no longer needs room for the navbar; its glow fades in. */
-.promo-img + .feature-hero {
-  padding-top: 2.5rem;
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 220px);
-  mask-image: linear-gradient(180deg, transparent, #000 220px);
+/* The featured show sits right under the banner, so it no longer needs room for the navbar. */
+@media (min-width: 701px) {
+  .promo-img + .feature-hero { padding-top: 2.5rem; }
 }
 @media (max-width: 700px) {
-  .promo-img { padding-bottom: 20px; }
-  .promo-img__art img { height: auto; }
-  .promo-img__cta { position: static; transform: none; display: flex; margin: 8px 16px 0; justify-content: center; }
+  .promo-img { display: none; }
 }
