@@ -4426,3 +4426,155 @@ video.feature-hero__preview {
     justify-self: start;
   }
 }
+
+/* ---------- Red light beams framing the hero (both edges, slow pulse) ---------- */
+
+.feature-hero__beams {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.feature-hero__beams span {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  width: clamp(140px, 17vw, 300px);
+  /* Hot core fading to deep crimson, softened into a glow. */
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(150, 10, 35, 0.55) 18%,
+    rgba(255, 46, 77, 0.9) 42%,
+    rgba(255, 120, 70, 0.95) 50%,
+    rgba(255, 46, 77, 0.9) 58%,
+    rgba(150, 10, 35, 0.55) 82%,
+    transparent 100%
+  );
+  filter: blur(38px) saturate(1.2);
+  opacity: 0.75;
+  mix-blend-mode: screen;
+  animation: beam-pulse 6s ease-in-out infinite;
+}
+
+.feature-hero__beams span:first-child {
+  left: clamp(-150px, -7vw, -60px);
+}
+
+.feature-hero__beams span:last-child {
+  right: clamp(-150px, -7vw, -60px);
+  animation-delay: -3s;
+}
+
+/* A dark vignette between the beams keeps the copy and cover readable. */
+.feature-hero__beams::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(48% 70% at 50% 50%, rgba(10, 10, 11, 0.75), transparent 75%);
+}
+
+@keyframes beam-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scaleX(1.12);
+  }
+}
+
+/* The red top bar glow ties into the beams. */
+.feature-hero__cover {
+  box-shadow:
+    0 40px 90px -20px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 0 120px -10px rgba(255, 46, 77, 0.55);
+}
+
+@media (max-width: 720px) {
+  .feature-hero__beams span {
+    width: 120px;
+    filter: blur(28px);
+    opacity: 0.55;
+  }
+
+  .feature-hero__beams span:first-child {
+    left: -80px;
+  }
+
+  .feature-hero__beams span:last-child {
+    right: -80px;
+  }
+}
+
+/* Stronger beams: above the cover-tinted backdrop, below the content. */
+.feature-hero__beams {
+  z-index: 0;
+}
+
+.feature-hero__inner {
+  z-index: 1;
+}
+
+.feature-hero__beams span {
+  width: clamp(180px, 20vw, 340px);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(120, 0, 25, 0.7) 15%,
+    #ff1f45 38%,
+    #ff7a45 50%,
+    #ff1f45 62%,
+    rgba(120, 0, 25, 0.7) 85%,
+    transparent 100%
+  );
+  filter: blur(46px);
+  mix-blend-mode: normal;
+  opacity: 0.85;
+}
+
+.feature-hero__beams span:first-child {
+  left: clamp(-170px, -8vw, -70px);
+}
+
+.feature-hero__beams span:last-child {
+  right: clamp(-170px, -8vw, -70px);
+}
+
+@keyframes beam-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scaleX(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1.15);
+  }
+}
+
+@media (max-width: 720px) {
+  .feature-hero__beams span {
+    width: 130px;
+    filter: blur(30px);
+    opacity: 0.7;
+  }
+
+  .feature-hero__beams span:first-child {
+    left: -90px;
+  }
+
+  .feature-hero__beams span:last-child {
+    right: -90px;
+  }
+}
+
+.feature-hero__beams {
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+}

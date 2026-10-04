@@ -36,6 +36,10 @@ export default function Hero({ items }: { items: SeriesSummary[] }) {
       onMouseLeave={() => setPaused(false)}
     >
       <div className="feature-hero__wash" aria-hidden />
+      <div className="feature-hero__beams" aria-hidden>
+        <span />
+        <span />
+      </div>
       {image && <div key={series.id} className="feature-hero__ambient" style={{ backgroundImage: `url("${image}")` }} aria-hidden />}
       {items.length > 1 && (
         <>
