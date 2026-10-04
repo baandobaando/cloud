@@ -15,6 +15,7 @@ import Watch from './pages/Watch'
 import Plans from './pages/Plans'
 import Account from './pages/Account'
 import { OrderStatusPage, TestCheckout } from './pages/Billing'
+import { Privacy, Terms } from './pages/Legal'
 
 // The admin panel is only downloaded by admins.
 const Admin = lazy(() => import('./admin/Admin'))
@@ -50,6 +51,8 @@ export default function App() {
                 <Route path="/search" element={<Navigate to="/browse" replace />} />
                 <Route path="/title/:seriesId" element={<Title />} />
                 <Route path="/plans" element={<Plans />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               <Footer />
@@ -94,6 +97,8 @@ export default function App() {
               <Route path="/search" element={<Navigate to="/browse" replace />} />
               <Route path="/title/:seriesId" element={<Title />} />
               <Route path="/plans" element={<Plans />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/account" element={<Account />} />
               <Route path="/billing/order/:orderId" element={<OrderStatusPage />} />
               <Route path="/login" element={<AuthRedirect />} />

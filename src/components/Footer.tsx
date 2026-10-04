@@ -39,7 +39,10 @@ export default function Footer() {
           )}
         </nav>
       </div>
-      <p className="footer__legal muted small">© {year} BingeTube. Payments in crypto via NOWPayments or BTCPay Server.</p>
+      <p className="footer__legal muted small">
+        © {year} BingeTube · <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> · Payments in crypto via NOWPayments or
+        BTCPay Server.
+      </p>
     </footer>
   )
 }

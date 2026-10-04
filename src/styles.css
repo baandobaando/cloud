@@ -4885,3 +4885,54 @@ video.feature-hero__preview {
     top: calc(var(--nav-h) + 1.5rem + min(50vw, 200px) * 0.89);
   }
 }
+
+/* ---------- Privacy / Terms ---------- */
+
+.legal {
+  max-width: 760px;
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+  line-height: 1.7;
+  color: var(--text-2);
+}
+
+.legal__head {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.legal__head h1 {
+  color: var(--text);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+}
+
+.legal h2 {
+  margin: 2.2rem 0 0.6rem;
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
+.legal ul {
+  padding-left: 1.2rem;
+}
+
+.legal li + li {
+  margin-top: 0.4rem;
+}
+
+.legal strong {
+  color: var(--text);
+}
+
+.legal a,
+.footer__legal a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal__contact {
+  margin-top: 2.5rem;
+}
