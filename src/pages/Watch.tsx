@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { EpisodeView as Episode, SeriesDetail as Series } from '../../shared/types'
 import { useSession } from '../state/Session'
@@ -7,7 +7,11 @@ import Poster from '../components/Poster'
 import Icon from '../components/Icon'
 import { ErrorState, Spinner } from '../components/Feedback'
 
-/** Vertical, swipeable episode feed — one full-screen episode per slide. */
+const SEEK_STEP = 10
+const CONTROLS_HIDE_MS = 3000
+const NEXT_COUNTDOWN = 5
+
+/** Episode player: swipe or scroll between episodes, with full playback controls on each. */
 export default function Watch() {
   const { seriesId = '', episode = '1' } = useParams()
   const { data: series, error, reload } = useApi<Series>(`/series/${encodeURIComponent(seriesId)}`)
@@ -20,16 +24,19 @@ export default function Watch() {
 function Feed({ series, startEpisode: requestedEpisode }: { series: Series; startEpisode: number }) {
   const navigate = useNavigate()
   const { progress, saveProgress } = useSession()
-  // The URL is rewritten as you swipe, so pin where this viewing session started.
+  // The URL is rewritten as you move between episodes, so pin where this viewing session started.
   const [startEpisode] = useState(requestedEpisode)
   const [resumeAt] = useState(() =>
     progress[series.id]?.episodeNumber === requestedEpisode ? progress[series.id].position : 0,
   )
   const [current, setCurrent] = useState(startEpisode)
   const [muted, setMuted] = useState(false)
+  const [volume, setVolume] = useState(1)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
   const feedRef = useRef<HTMLDivElement>(null)
   const slideRefs = useRef<(HTMLDivElement | null)[]>([])
+  const total = series.episodes.length
 
   const canWatch = (n: number) => series.episodes[n - 1]?.locked === false
 
@@ -37,12 +44,11 @@ function Feed({ series, startEpisode: requestedEpisode }: { series: Series; star
     slideRefs.current[n - 1]?.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant', block: 'start' })
   }, [])
 
-  // Jump to the starting episode on mount.
   useEffect(() => {
     goTo(startEpisode, false)
   }, [goTo, startEpisode])
 
-  // Track which slide is on screen.
+  // Track which episode is on screen.
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -56,24 +62,34 @@ function Feed({ series, startEpisode: requestedEpisode }: { series: Series; star
     return () => observer.disconnect()
   }, [series])
 
-  // Keep the URL in sync without stacking history entries.
   useEffect(() => {
     navigate(`/watch/${series.id}/${current}`, { replace: true })
   }, [current, navigate, series.id])
 
-  // Keyboard: arrows to move between episodes, Escape to leave.
+  // Episode-level keys; playback keys live in the active player.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') goTo(Math.min(current + 1, series.episodes.length))
-      else if (e.key === 'ArrowUp') goTo(Math.max(current - 1, 1))
-      else if (e.key === 'Escape') navigate(`/title/${series.id}`)
+      if (e.target instanceof HTMLInputElement && e.target.type !== 'range') return
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || (e.key === 'N' && e.shiftKey)) {
+        e.preventDefault()
+        goTo(Math.min(current + 1, total))
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp' || (e.key === 'P' && e.shiftKey)) {
+        e.preventDefault()
+        goTo(Math.max(current - 1, 1))
+      } else if (e.key === 'Escape' && !document.fullscreenElement) {
+        if (drawerOpen) setDrawerOpen(false)
+        else navigate(`/title/${series.id}`)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [current, goTo, navigate, series])
+  }, [current, goTo, navigate, series.id, total, drawerOpen])
+
+  const currentEp = series.episodes[current - 1]
+  const showBareTopBar = !currentEp || !canWatch(current) || !currentEp.videoUrl
 
   return (
-    <div className="watch">
+    <div className="watch" ref={rootRef}>
       <div className="watch__backdrop">
         <Poster series={series} variant="wide" showTitle={false} />
       </div>
@@ -97,54 +113,37 @@ function Feed({ series, startEpisode: requestedEpisode }: { series: Series; star
                 </div>
               ) : (
                 <EpisodePlayer
+                  series={series}
                   episode={ep}
                   active={ep.number === current}
                   startAt={ep.number === startEpisode ? resumeAt : 0}
                   muted={muted}
+                  volume={volume}
                   onMutedChange={setMuted}
+                  onVolumeChange={setVolume}
                   onProgress={(pos) => saveProgress(series.id, ep.number, pos)}
-                  onEnded={() => ep.number < series.episodes.length && goTo(ep.number + 1)}
+                  nextEpisode={series.episodes[ep.number] ?? null}
+                  onNext={() => goTo(ep.number + 1)}
+                  onPrev={ep.number > 1 ? () => goTo(ep.number - 1) : undefined}
+                  onEpisodes={() => setDrawerOpen(true)}
+                  fullscreenTarget={rootRef}
                 />
               ))}
           </div>
         ))}
       </div>
 
-      <div className="watch__top">
-        <Link to={`/title/${series.id}`} className="icon-btn" aria-label="Back">
-          <Icon name="back" />
-        </Link>
-        <div className="watch__meta">
-          <strong>{series.title}</strong>
-          <span>
-            Episode {current} of {series.episodes.length}
-          </span>
-        </div>
-      </div>
-
-      {/* Hidden on locked episodes so the controls don't cover the paywall. */}
-      {canWatch(current) && (
-        <div className="watch__side">
-          <button className="side-btn" onClick={() => setMuted((m) => !m)} aria-label={muted ? 'Unmute' : 'Mute'}>
-            <Icon name={muted ? 'mute' : 'volume'} size={24} />
-            <span>{muted ? 'Muted' : 'Sound'}</span>
-          </button>
-          <button className="side-btn" onClick={() => setDrawerOpen(true)}>
-            <Icon name="list" size={24} />
-            <span>Episodes</span>
-          </button>
-          <button className="side-btn" onClick={() => goTo(Math.max(current - 1, 1))} disabled={current === 1}>
-            <Icon name="up" size={24} />
-            <span>Prev</span>
-          </button>
-          <button
-            className="side-btn"
-            onClick={() => goTo(Math.min(current + 1, series.episodes.length))}
-            disabled={current === series.episodes.length}
-          >
-            <Icon name="down" size={24} />
-            <span>Next</span>
-          </button>
+      {showBareTopBar && (
+        <div className="watch__top">
+          <Link to={`/title/${series.id}`} className="icon-btn" aria-label="Back to series">
+            <Icon name="back" />
+          </Link>
+          <div className="watch__meta">
+            <strong>{series.title}</strong>
+            <span>
+              Episode {current} of {total}
+            </span>
+          </div>
         </div>
       )}
 
@@ -165,49 +164,196 @@ function Feed({ series, startEpisode: requestedEpisode }: { series: Series; star
 }
 
 interface PlayerProps {
+  series: Series
   episode: Episode
   active: boolean
   startAt: number
   muted: boolean
+  volume: number
   onMutedChange: (muted: boolean) => void
+  onVolumeChange: (volume: number) => void
   onProgress: (position: number) => void
-  onEnded: () => void
+  nextEpisode: Episode | null
+  onNext: () => void
+  onPrev?: () => void
+  onEpisodes: () => void
+  fullscreenTarget: RefObject<HTMLDivElement | null>
 }
 
-function EpisodePlayer({ episode, active, startAt, muted, onMutedChange, onProgress, onEnded }: PlayerProps) {
+function EpisodePlayer(props: PlayerProps) {
+  const { series, episode, active, startAt, muted, volume, onMutedChange, onVolumeChange, onProgress, nextEpisode, onNext, onPrev, onEpisodes, fullscreenTarget } = props
   const videoRef = useRef<HTMLVideoElement>(null)
   const lastSaved = useRef(0)
-  const [paused, setPaused] = useState(false)
-  const [pct, setPct] = useState(0)
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const lastTap = useRef<{ t: number; x: number } | null>(null)
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
+  const [playing, setPlaying] = useState(false)
+  const [time, setTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [buffered, setBuffered] = useState(0)
+  const [waiting, setWaiting] = useState(false)
+  const [controls, setControls] = useState(true)
+  const [scrubbing, setScrubbing] = useState(false)
+  const [flash, setFlash] = useState<{ side: 'left' | 'right'; key: number } | null>(null)
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  const v = () => videoRef.current
+
+  const showControls = useCallback(() => {
+    setControls(true)
+    clearTimeout(hideTimer.current)
+    hideTimer.current = setTimeout(() => {
+      if (videoRef.current && !videoRef.current.paused) setControls(false)
+    }, CONTROLS_HIDE_MS)
+  }, [])
+
+  // Start or stop playback as this episode becomes the active one.
   useEffect(() => {
-    const v = videoRef.current
-    if (!v) return
+    const video = v()
+    if (!video) return
     if (active) {
-      v.play().catch(() => {
+      video.play().catch(() => {
         // Autoplay with sound was blocked: retry muted.
         onMutedChange(true)
-        v.muted = true
-        v.play().catch(() => setPaused(true))
+        video.muted = true
+        video.play().catch(() => setPlaying(false))
       })
-      onProgress(v.currentTime)
+      onProgress(video.currentTime)
+      showControls()
     } else {
-      v.pause()
+      video.pause()
+      setCountdown(null)
     }
   }, [active])
 
-  const togglePlay = () => {
-    const v = videoRef.current
-    if (!v) return
-    if (v.paused) v.play().then(() => setPaused(false)).catch(() => {})
-    else {
-      v.pause()
-      setPaused(true)
+  useEffect(() => {
+    if (v()) v()!.volume = volume
+  }, [volume])
+
+  useEffect(() => () => {
+    clearTimeout(hideTimer.current)
+    clearTimeout(singleTapTimer.current)
+  }, [])
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  // "Next episode in 5…" countdown after an episode ends.
+  useEffect(() => {
+    if (countdown === null) return
+    if (countdown <= 0) {
+      setCountdown(null)
+      onNext()
+      return
     }
+    const t = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000)
+    return () => clearTimeout(t)
+  }, [countdown, onNext])
+
+  const togglePlay = useCallback(() => {
+    const video = v()
+    if (!video) return
+    if (video.paused) video.play().catch(() => {})
+    else video.pause()
+    showControls()
+  }, [showControls])
+
+  const seekBy = useCallback(
+    (delta: number) => {
+      const video = v()
+      if (!video || !Number.isFinite(video.duration)) return
+      video.currentTime = clamp(video.currentTime + delta, 0, video.duration - 0.1)
+      setFlash({ side: delta < 0 ? 'left' : 'right', key: Date.now() })
+      showControls()
+    },
+    [showControls],
+  )
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    else fullscreenTarget.current?.requestFullscreen?.().catch(() => {})
+  }, [fullscreenTarget])
+
+  const toggleMute = useCallback(() => {
+    const next = !muted
+    onMutedChange(next)
+    if (!next && volume === 0) onVolumeChange(0.5)
+    showControls()
+  }, [muted, volume, onMutedChange, onVolumeChange, showControls])
+
+  // Playback keyboard shortcuts for the active player.
+  useEffect(() => {
+    if (!active) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement && e.target.type !== 'range') return
+      if (e.altKey || e.ctrlKey || e.metaKey) return
+      switch (e.key) {
+        case ' ':
+        case 'k':
+          e.preventDefault()
+          togglePlay()
+          break
+        case 'ArrowLeft':
+        case 'j':
+          e.preventDefault()
+          seekBy(-SEEK_STEP)
+          break
+        case 'ArrowRight':
+        case 'l':
+          e.preventDefault()
+          seekBy(SEEK_STEP)
+          break
+        case 'f':
+          toggleFullscreen()
+          break
+        case 'm':
+          toggleMute()
+          break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [active, togglePlay, seekBy, toggleFullscreen, toggleMute])
+
+  /** Mouse: click toggles play. Touch: tap toggles controls, double-tap a side skips 10s. */
+  const onSurfacePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse') {
+      togglePlay()
+      return
+    }
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width
+    const now = Date.now()
+    const prev = lastTap.current
+    if (prev && now - prev.t < 300 && (x < 0.4 || x > 0.6)) {
+      clearTimeout(singleTapTimer.current)
+      lastTap.current = null
+      seekBy(x < 0.5 ? -SEEK_STEP : SEEK_STEP)
+      return
+    }
+    lastTap.current = { t: now, x }
+    clearTimeout(singleTapTimer.current)
+    singleTapTimer.current = setTimeout(() => {
+      if (controls) setControls(false)
+      else showControls()
+    }, 250)
   }
 
+  const pct = duration ? (time / duration) * 100 : 0
+  const bufPct = duration ? (buffered / duration) * 100 : 0
+  const visible = controls || !playing || scrubbing || countdown !== null
+
   return (
-    <div className="player" onClick={togglePlay}>
+    <div
+      className={`player ${visible ? 'player--controls' : 'player--idle'}`}
+      onMouseMove={showControls}
+      onMouseLeave={() => playing && setControls(false)}
+    >
       <video
         ref={videoRef}
         src={episode.videoUrl ?? undefined}
@@ -215,26 +361,171 @@ function EpisodePlayer({ episode, active, startAt, muted, onMutedChange, onProgr
         muted={muted}
         preload="auto"
         onLoadedMetadata={(e) => {
+          setDuration(e.currentTarget.duration)
           if (startAt > 0 && startAt < e.currentTarget.duration - 2) e.currentTarget.currentTime = startAt
         }}
+        onDurationChange={(e) => setDuration(e.currentTarget.duration)}
         onTimeUpdate={(e) => {
-          const v = e.currentTarget
-          if (v.duration) setPct((v.currentTime / v.duration) * 100)
-          if (active && Math.abs(v.currentTime - lastSaved.current) > 5) {
-            lastSaved.current = v.currentTime
-            onProgress(v.currentTime)
+          const video = e.currentTarget
+          if (!scrubbing) setTime(video.currentTime)
+          if (video.buffered.length) setBuffered(video.buffered.end(video.buffered.length - 1))
+          if (active && Math.abs(video.currentTime - lastSaved.current) > 5) {
+            lastSaved.current = video.currentTime
+            onProgress(video.currentTime)
           }
         }}
-        onPlay={() => setPaused(false)}
-        onEnded={onEnded}
+        onPlay={() => {
+          setPlaying(true)
+          setCountdown(null)
+        }}
+        onPause={() => setPlaying(false)}
+        onWaiting={() => setWaiting(true)}
+        onPlaying={() => setWaiting(false)}
+        onCanPlay={() => setWaiting(false)}
+        onEnded={() => {
+          setPlaying(false)
+          onProgress(0)
+          if (nextEpisode) setCountdown(NEXT_COUNTDOWN)
+        }}
       />
-      {paused && <div className="player__paused"><Icon name="play" size={64} /></div>}
-      <div className="player__caption">
-        <span className="player__ep">EP {episode.number}</span> {episode.title}
+
+      <div className="player__surface" onPointerUp={onSurfacePointerUp} />
+
+      {waiting && playing && <div className="player__loading"><div className="spinner" /></div>}
+
+      {flash && (
+        <div key={flash.key} className={`player__flash player__flash--${flash.side}`}>
+          <Icon name={flash.side === 'left' ? 'rewind' : 'forward'} size={30} />
+          <span>{SEEK_STEP}s</span>
+        </div>
+      )}
+
+      {/* Mouse clicks don't focus buttons, so Space keeps meaning play/pause (Tab focus still works). */}
+      <div className="player__chrome" onMouseDown={(e) => (e.target as Element).closest('button') && e.preventDefault()}>
+        <div className="player__top">
+          <Link to={`/title/${series.id}`} className="icon-btn icon-btn--ghost" aria-label="Back to series">
+            <Icon name="back" />
+          </Link>
+          <div className="player__titles">
+            <strong>{series.title}</strong>
+            <span>
+              Episode {episode.number} · {episode.title}
+            </span>
+          </div>
+        </div>
+
+        <div className="player__center">
+          <button className="player__btn" onClick={() => seekBy(-SEEK_STEP)} aria-label={`Back ${SEEK_STEP} seconds`}>
+            <Icon name="rewind" size={30} />
+            <small>{SEEK_STEP}</small>
+          </button>
+          <button className="player__btn player__btn--main" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'}>
+            <Icon name={playing ? 'pause' : 'play'} size={34} />
+          </button>
+          <button className="player__btn" onClick={() => seekBy(SEEK_STEP)} aria-label={`Forward ${SEEK_STEP} seconds`}>
+            <Icon name="forward" size={30} />
+            <small>{SEEK_STEP}</small>
+          </button>
+        </div>
+
+        <div className="player__bottom">
+          <div className="player__timeline">
+            <input
+              id={`seek-${episode.id}`}
+              className="player__seek"
+              type="range"
+              min={0}
+              max={duration || 0}
+              step={0.1}
+              value={time}
+              aria-label="Seek"
+              aria-valuetext={`${formatTime(time)} of ${formatTime(duration)}`}
+              style={{ '--pct': `${pct}%`, '--buf': `${bufPct}%` } as CSSProperties}
+              onPointerDown={() => setScrubbing(true)}
+              onPointerUp={() => setScrubbing(false)}
+              onChange={(e) => {
+                const t = Number(e.target.value)
+                setTime(t)
+                if (v()) v()!.currentTime = t
+                showControls()
+              }}
+            />
+            <span className="player__time">-{formatTime(Math.max(0, duration - time))}</span>
+          </div>
+          <div className="player__row">
+            <div className="player__group">
+              <button className="player__icon" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'}>
+                <Icon name={playing ? 'pause' : 'play'} size={22} />
+              </button>
+              <div className="player__volume">
+                <button className="player__icon" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+                  <Icon name={muted || volume === 0 ? 'mute' : 'volume'} size={22} />
+                </button>
+                <input
+                  id={`vol-${episode.id}`}
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={muted ? 0 : volume}
+                  aria-label="Volume"
+                  style={{ '--pct': `${(muted ? 0 : volume) * 100}%` } as CSSProperties}
+                  onChange={(e) => {
+                    const val = Number(e.target.value)
+                    onVolumeChange(val)
+                    onMutedChange(val === 0)
+                    showControls()
+                  }}
+                />
+              </div>
+              <span className="player__clock">
+                {formatTime(time)} / {formatTime(duration)}
+              </span>
+            </div>
+            <div className="player__group">
+              {onPrev && (
+                <button className="player__icon player__wide-only" onClick={onPrev} aria-label="Previous episode">
+                  <Icon name="up" size={22} />
+                </button>
+              )}
+              <button className="player__icon player__labeled" onClick={onEpisodes} aria-label="Episodes">
+                <Icon name="list" size={22} />
+                <span>Episodes</span>
+              </button>
+              {nextEpisode && (
+                <button className="player__icon player__labeled" onClick={onNext} aria-label="Next episode">
+                  <Icon name="next" size={20} />
+                  <span>Next</span>
+                </button>
+              )}
+              {document.fullscreenEnabled && (
+                <button className="player__icon" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}>
+                  <Icon name={isFullscreen ? 'shrink' : 'expand'} size={22} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="player__bar">
-        <div style={{ width: `${pct}%` }} />
-      </div>
+
+      {countdown !== null && nextEpisode && (
+        <div className="next-up" role="status">
+          <span className="eyebrow">Next episode</span>
+          <strong>
+            Episode {nextEpisode.number} · {nextEpisode.title}
+          </strong>
+          <div className="next-up__actions">
+            <button className="btn btn--primary btn--small" onClick={() => { setCountdown(null); onNext() }}>
+              <Icon name="play" size={16} /> Play now
+            </button>
+            <button className="btn btn--glass btn--small" onClick={() => setCountdown(null)}>
+              Cancel
+            </button>
+          </div>
+          <div className="next-up__timer" style={{ '--t': `${NEXT_COUNTDOWN}s` } as CSSProperties} />
+          <span className="muted small">Starts in {countdown}s</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -270,7 +561,7 @@ interface DrawerProps {
 function EpisodeDrawer({ series, current, canWatch, onPick, onClose }: DrawerProps) {
   return (
     <div className="drawer" onClick={onClose}>
-      <div className="drawer__panel" onClick={(e) => e.stopPropagation()}>
+      <div className="drawer__panel" role="dialog" aria-label="Episodes" onClick={(e) => e.stopPropagation()}>
         <div className="drawer__head">
           <strong>{series.title}</strong>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
@@ -304,6 +595,13 @@ function NotFound({ message, onRetry }: { message: string; onRetry?: () => void 
       </ErrorState>
     </div>
   )
+}
+
+function formatTime(s: number): string {
+  if (!Number.isFinite(s) || s < 0) return '0:00'
+  const m = Math.floor(s / 60)
+  const sec = Math.floor(s % 60)
+  return `${m}:${String(sec).padStart(2, '0')}`
 }
 
 function clamp(n: number, min: number, max: number) {

@@ -6,6 +6,12 @@ const PATHS = {
   flame: 'M12 3s5 4.5 5 9.5A5 5 0 0 1 7 12.5c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3 1-6 1-8z',
   bookmark: 'M6 3h12v18l-6-4-6 4z',
   play: 'M7 4.5v15l12-7.5z',
+  pause: 'M7 4h3.5v16H7zM13.5 4H17v16h-3.5z',
+  rewind: 'M4 12a8 8 0 1 0 2.3-5.6M4 4v4.5h4.5',
+  forward: 'M20 12a8 8 0 1 1-2.3-5.6M20 4v4.5h-4.5',
+  next: 'M5 5l9 7-9 7zM16 5h2.5v14H16z',
+  expand: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+  shrink: 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',
   plus: 'M12 5v14M5 12h14',
   check: 'M5 12.5 10 17 19 7',
   info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5',
@@ -37,6 +43,8 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS
 
+const FILLED = new Set<IconName>(['play', 'pause', 'next'])
+
 export default function Icon({ name, size = 20, className }: { name: IconName; size?: number; className?: string }) {
   return (
     <svg
@@ -46,12 +54,12 @@ export default function Icon({ name, size = 20, className }: { name: IconName; s
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={name === 'play' ? 0 : 2}
+      strokeWidth={FILLED.has(name) ? 0 : 2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d={PATHS[name]} fill={name === 'play' ? 'currentColor' : 'none'} />
+      <path d={PATHS[name]} fill={FILLED.has(name) ? 'currentColor' : 'none'} />
     </svg>
   )
 }
