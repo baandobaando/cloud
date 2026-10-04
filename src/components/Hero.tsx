@@ -8,6 +8,13 @@ import { useVideoSource } from '../useVideoSource'
 
 const ROTATE_MS = 9000
 
+/** Glow style for the hero; try others live with ?glow=inferno | neon | stage | halo. */
+const GLOW_STYLES = ['inferno', 'neon', 'stage', 'halo']
+const GLOW = (() => {
+  const g = new URLSearchParams(window.location.search).get('glow')
+  return g && GLOW_STYLES.includes(g) ? g : undefined
+})()
+
 /** Featured carousel of the top series (items arrive in rank order): a color wash taken from the cover, copy on the left, the tall cover on the right. */
 export default function Hero({ items }: { items: SeriesSummary[] }) {
   const { me, myList, toggleMyList, progress } = useSession()
@@ -31,6 +38,7 @@ export default function Hero({ items }: { items: SeriesSummary[] }) {
   return (
     <section
       className="feature-hero"
+      data-glow={GLOW}
       style={{ '--hero-a': c1, '--hero-b': c2 } as CSSProperties}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}

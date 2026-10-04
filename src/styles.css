@@ -4578,3 +4578,110 @@ video.feature-hero__preview {
   -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
   mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
 }
+
+/* ---------- Hero glow variations (data-glow on .feature-hero) ---------- */
+
+/* A · Inferno: hotter, fully saturated beams with a wide outer bloom. */
+.feature-hero[data-glow='inferno'] .feature-hero__beams span {
+  width: clamp(220px, 24vw, 400px);
+  background: linear-gradient(90deg, transparent 0%, #8a0020 14%, #ff0033 36%, #ff6a00 50%, #ff0033 64%, #8a0020 86%, transparent 100%);
+  filter: blur(40px) saturate(1.6);
+  opacity: 1;
+  box-shadow: 0 0 160px 60px rgba(255, 0, 51, 0.55);
+}
+
+.feature-hero[data-glow='inferno'] .feature-hero__beams::after {
+  background: radial-gradient(42% 66% at 50% 50%, rgba(10, 10, 11, 0.82), transparent 78%);
+}
+
+/* B · Neon: thin, intense light tubes with a big magenta-red bloom. */
+.feature-hero[data-glow='neon'] .feature-hero__beams span {
+  width: 14px;
+  background: #ff2a6d;
+  filter: none;
+  opacity: 1;
+  box-shadow:
+    0 0 12px 4px #ff2a6d,
+    0 0 50px 18px rgba(255, 42, 109, 0.85),
+    0 0 140px 60px rgba(255, 0, 60, 0.6),
+    0 0 260px 120px rgba(170, 0, 60, 0.45);
+  animation: neon-flicker 5s ease-in-out infinite;
+}
+
+.feature-hero[data-glow='neon'] .feature-hero__beams span:first-child {
+  left: clamp(18px, 4vw, 60px);
+}
+
+.feature-hero[data-glow='neon'] .feature-hero__beams span:last-child {
+  right: clamp(18px, 4vw, 60px);
+}
+
+@keyframes neon-flicker {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.85; }
+  48% { opacity: 1; }
+  50% { opacity: 0.7; }
+  52% { opacity: 1; }
+}
+
+/* C · Stage: beams plus a molten horizon rising from the bottom, like stage lights. */
+.feature-hero[data-glow='stage'] .feature-hero__beams span {
+  background: linear-gradient(90deg, transparent, #b0002a 20%, #ff1744 45%, #ff8a3d 50%, #ff1744 55%, #b0002a 80%, transparent);
+  filter: blur(36px) saturate(1.5);
+  opacity: 0.95;
+}
+
+.feature-hero[data-glow='stage'] .feature-hero__beams {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.feature-hero[data-glow='stage'] .feature-hero__beams::before {
+  content: '';
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -38%;
+  height: 70%;
+  background: radial-gradient(50% 50% at 50% 50%, #ff5a1f 0%, #ff0f3f 35%, rgba(140, 0, 40, 0.6) 60%, transparent 75%);
+  filter: blur(30px) saturate(1.4);
+  animation: beam-pulse 7s ease-in-out infinite;
+}
+
+.feature-hero[data-glow='stage'] .feature-hero__beams::after {
+  background:
+    radial-gradient(44% 58% at 50% 42%, rgba(10, 10, 11, 0.8), transparent 80%),
+    linear-gradient(0deg, transparent 0%, transparent 100%);
+}
+
+/* D · Halo: a saturated fire burst behind the cover, side beams kept soft. */
+.feature-hero[data-glow='halo'] .feature-hero__beams span {
+  opacity: 0.55;
+  filter: blur(50px) saturate(1.5);
+}
+
+.feature-hero[data-glow='halo'] .feature-hero__cover::before {
+  content: '';
+  position: absolute;
+  inset: -18% -30%;
+  z-index: -1;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ff0033, #ff6a00, #ff0f6f, #ff0033, #ff6a00, #ff0033);
+  filter: blur(55px) saturate(1.6);
+  opacity: 0.9;
+  animation: halo-spin 14s linear infinite;
+}
+
+.feature-hero[data-glow='halo'] .feature-hero__cover {
+  overflow: visible;
+  isolation: isolate;
+}
+
+.feature-hero[data-glow='halo'] .feature-hero__cover > img,
+.feature-hero[data-glow='halo'] .feature-hero__cover > video {
+  border-radius: inherit;
+}
+
+@keyframes halo-spin {
+  to { transform: rotate(360deg); }
+}
