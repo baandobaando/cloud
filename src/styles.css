@@ -5014,19 +5014,20 @@ video.feature-hero__preview {
 
 /* ---------- Promo banner (top of home, non-members) ---------- */
 /* Built at the proportions of the Facebook cover art (1640 x 412 after cropping), so every size is in container
-   units: 1cqw = 1% of the banner's width. Rounded "( )" ends. Desktop and tablet only. */
+   units: 1cqw = 1% of the banner's width. Full width, desktop and tablet only. */
 .promo-img {
   position: relative;
   isolation: isolate;
   container-type: inline-size;
-  width: min(1320px, calc(100% - 2 * var(--gutter)));
+  width: 100%;
   aspect-ratio: 1640 / 412;
-  margin: calc(var(--nav-h) + env(safe-area-inset-top, 0px) + 12px) auto 0;
-  border-radius: 180px / 50%;
+  margin-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
   overflow: hidden;
   background: #09090b;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 30px 80px rgba(255, 36, 67, 0.12);
   font-family: var(--font-display);
+  /* Full width, fading into the page above and below. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 12%, #000 93%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 93%, transparent);
 }
 .promo-img__glow {
   position: absolute;
