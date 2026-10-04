@@ -125,7 +125,7 @@ function removeLocalMedia(url: string | null) {
 function validateVideoUrl(value: unknown): string | null {
   if (value === null || value === '') return null
   const url = str(value, 'Video URL', { max: 2000 })
-  if (!/^https:\/\//i.test(url) && !url.startsWith('/media/episodes/') && !url.startsWith(BUNNY_PREFIX)) {
+  if (!/^https:\/\//i.test(url) && !url.startsWith('/media/episodes/') && !url.startsWith('/sample/') && !url.startsWith(BUNNY_PREFIX)) {
     throw new HttpError(400, 'Video URL must start with https://')
   }
   return url

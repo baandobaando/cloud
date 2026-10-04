@@ -23,14 +23,8 @@ interface SeedSeries {
   episodes: SeedEpisode[]
 }
 
-// Public sample clips stand in for real episode footage.
-const SAMPLE_VIDEOS = [
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-]
+// Short vertical clips shipped in public/sample so the sample shows play offline.
+const SAMPLE_VIDEOS = ['/sample/clip1.mp4', '/sample/clip2.mp4', '/sample/clip3.mp4', '/sample/clip4.mp4', '/sample/clip5.mp4']
 
 const EPISODE_BEATS = [
   'The Contract',

@@ -174,3 +174,9 @@ function seedCatalog() {
 }
 
 seedCatalog()
+
+// Older databases point sample episodes at Google's sample bucket, which now refuses requests.
+db.exec(`
+  UPDATE episodes SET video_url = '/sample/clip' || ((number - 1) % 5 + 1) || '.mp4'
+  WHERE video_url LIKE 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/%'
+`)
