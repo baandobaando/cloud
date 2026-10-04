@@ -2,6 +2,7 @@ import crypto from 'node:crypto'
 import { Router } from 'express'
 import {
   DURATIONS,
+  MEMBERSHIP,
   getPlan,
   priceFor,
   type BillingConfig,
@@ -165,7 +166,7 @@ for (const p of [nowpayments, btcpay]) {
 billingRouter.use(requireUser)
 
 billingRouter.post('/orders', rateLimit({ windowMs: 10 * 60 * 1000, max: 20 }), async (req, res) => {
-  const plan = getPlan(str(req.body?.plan, 'Plan'))
+  const plan = req.body?.plan ? getPlan(String(req.body.plan)) : MEMBERSHIP
   if (!plan) throw new HttpError(400, 'Unknown plan')
   const months = int(req.body?.months, 'Duration')
   if (!DURATIONS.some((d) => d.months === months)) throw new HttpError(400, 'Unsupported duration')
@@ -183,7 +184,7 @@ billingRouter.post('/orders', rateLimit({ windowMs: 10 * 60 * 1000, max: 20 }), 
     const { invoiceId, checkoutUrl } = await p.createInvoice({
       orderId: id,
       amountCents,
-      description: `ReelFlix ${plan.name} — ${months} month${months > 1 ? 's' : ''}`,
+      description: `ReelFlix membership — ${months} month${months > 1 ? 's' : ''}`,
       returnUrl: `${config.appUrl}/billing/order/${id}`,
     })
     db.prepare('UPDATE orders SET provider_invoice_id = ?, checkout_url = ? WHERE id = ?').run(invoiceId, checkoutUrl, id)

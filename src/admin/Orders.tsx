@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { PLANS, formatPrice, type OrderStatus } from '../../shared/types'
+import { formatPrice, type OrderStatus } from '../../shared/types'
+import Icon from '../components/Icon'
 import { api, errorMessage } from '../api'
 import { useApi } from '../useApi'
 import { ErrorState, Spinner } from '../components/Feedback'
@@ -38,7 +39,7 @@ export default function Orders() {
   const markPaid = async (o: AdminOrder) => {
     const ok = await dialog.confirm({
       title: `Mark order ${o.id.slice(0, 8)} as paid?`,
-      message: `${o.email} gets ${o.months} month(s) of ${o.plan}. Only do this after confirming the funds arrived in your ${o.provider} dashboard.`,
+      message: `${o.email} gets ${o.months} month(s) of membership. Only do this after confirming the funds arrived in your ${o.provider} dashboard.`,
       confirmLabel: 'Mark paid',
     })
     if (!ok) return
@@ -55,7 +56,7 @@ export default function Orders() {
     <>
       <div className="admin__head">
         <h1>Orders</h1>
-        <button className="btn btn--grey btn--small" onClick={reload}>↻ Refresh</button>
+        <button className="btn btn--secondary btn--small" onClick={reload}><Icon name="refresh" size={16} /> Refresh</button>
       </div>
       <p className="muted small">
         Every checkout creates an order. Payments are confirmed automatically by your processor's signed webhook. Use
@@ -79,14 +80,14 @@ export default function Orders() {
       ) : (
         <table className="table">
           <thead>
-            <tr><th>Created</th><th>User</th><th>Plan</th><th>Processor</th><th className="num">Amount</th><th>Status</th><th /></tr>
+            <tr><th>Created</th><th>User</th><th>Pass</th><th>Processor</th><th className="num">Amount</th><th>Status</th><th /></tr>
           </thead>
           <tbody>
             {data.map((o) => (
               <tr key={o.id}>
                 <td className="small">{new Date(o.createdAt).toLocaleString()}</td>
                 <td>{o.email}</td>
-                <td>{PLANS.find((p) => p.id === o.plan)?.name} · {o.months} mo</td>
+                <td>{o.months} month{o.months > 1 ? 's' : ''}</td>
                 <td>
                   {o.provider}
                   {o.providerInvoiceId && <div className="muted small mono" title={o.providerInvoiceId}>{o.providerInvoiceId.slice(0, 14)}</div>}

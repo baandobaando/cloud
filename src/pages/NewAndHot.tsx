@@ -18,8 +18,8 @@ export default function NewAndHot() {
             <Poster series={s} variant="wide" showTitle={false} />
             <div className="feature__body">
               <div className="feature__tags">
-                {s.isNew && <span className="pill pill--red">New</span>}
-                {s.trendingRank && <span className="pill">🔥 #{s.trendingRank} Trending</span>}
+                {s.isNew && <span className="tag tag--accent">New</span>}
+                {s.trendingRank && <span className="tag">#{s.trendingRank} trending</span>}
               </div>
               <h2>{s.title}</h2>
               <p>{s.synopsis}</p>

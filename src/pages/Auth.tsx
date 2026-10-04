@@ -2,6 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { IS_DEMO, errorMessage } from '../api'
 import { DemoAdminHint } from '../demo/DemoHints'
+import Logo from '../components/Logo'
 import { useSession } from '../state/Session'
 
 /** Only allow redirecting to paths on this site. */
@@ -13,9 +14,7 @@ function AuthShell({ title, children }: { title: string; children: ReactNode }) 
   return (
     <div className="auth">
       <header className="landing__nav">
-        <Link to="/" className="logo">
-          REELFLIX
-        </Link>
+        <Logo />
       </header>
       <div className="auth__card">
         <h1>{title}</h1>
@@ -48,7 +47,7 @@ export function Login() {
   }
 
   return (
-    <AuthShell title="Sign In">
+    <AuthShell title="Welcome back">
       <form className="form" onSubmit={submit}>
         {error && <div className="form__error">{error}</div>}
         <input type="email" autoComplete="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -60,8 +59,8 @@ export function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button className="btn btn--red btn--block" disabled={busy}>
-          {busy ? 'Signing in…' : 'Sign In'}
+        <button className="btn btn--accent btn--block" disabled={busy}>
+          {busy ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
       {IS_DEMO && <DemoAdminHint onUse={(e, p) => { setEmail(e); setPassword(p) }} />}
@@ -110,8 +109,8 @@ export function Signup() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button className="btn btn--red btn--block" disabled={busy}>
-          {busy ? 'Creating account…' : 'Create Account'}
+        <button className="btn btn--accent btn--block" disabled={busy}>
+          {busy ? 'Creating account…' : 'Create account'}
         </button>
       </form>
       <p className="muted">

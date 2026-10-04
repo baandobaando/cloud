@@ -14,7 +14,7 @@ export type Genre = (typeof GENRES)[number]
 export const RATINGS = ['TV-PG', 'TV-14', 'TV-MA'] as const
 export type Rating = (typeof RATINGS)[number]
 
-export type PlanId = 'basic' | 'standard' | 'premium'
+export type PlanId = 'member'
 
 export interface Plan {
   id: PlanId
@@ -24,21 +24,15 @@ export interface Plan {
   perks: string[]
 }
 
-export const PLANS: Plan[] = [
-  { id: 'basic', name: 'Basic', priceCents: 499, perks: ['Every episode, every series', '1 screen at a time', 'HD'] },
-  {
-    id: 'standard',
-    name: 'Standard',
-    priceCents: 799,
-    perks: ['Every episode, every series', '2 screens at a time', 'Full HD', 'Downloads'],
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    priceCents: 1199,
-    perks: ['Everything in Standard', '4 screens at a time', 'Early access to new series'],
-  },
-]
+/** One membership; members choose how many months to prepay. */
+export const MEMBERSHIP: Plan = {
+  id: 'member',
+  name: 'Membership',
+  priceCents: 999,
+  perks: ['Every episode of every series', 'New series every week', 'Watch on any device', 'No coins, no per-episode unlocks'],
+}
+
+export const PLANS: Plan[] = [MEMBERSHIP]
 
 export function getPlan(id: string): Plan | undefined {
   return PLANS.find((p) => p.id === id)
@@ -179,7 +173,8 @@ export interface AdminStats {
   users: number
   newUsers7d: number
   activeSubscribers: number
-  subscribersByPlan: Record<PlanId, number>
+  /** Paid passes by length in months, e.g. { 1: 12, 3: 5, 12: 2 }. */
+  passesByLength: Record<number, number>
   mrrCents: number
   revenue30dCents: number
   seriesPublished: number

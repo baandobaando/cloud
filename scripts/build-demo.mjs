@@ -9,7 +9,7 @@ const dir = 'dist-demo'
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8')
 const read = (ref) => fs.readFileSync(path.join(dir, ref.replace(/^\.\//, '')), 'utf8')
 
-const css = [...html.matchAll(/<link rel="stylesheet"[^>]*href="([^"]+)"/g)].map((m) => read(m[1])).join('\n')
+const css = [...html.matchAll(/<link rel="stylesheet"[^>]*href="([^"]+)"/g)].filter((m) => !/^https?:/.test(m[1])).map((m) => read(m[1])).join('\n')
 const js = [...html.matchAll(/<script type="module"[^>]*src="([^"]+)"/g)].map((m) => read(m[1])).join('\n')
 if (!css || !js) throw new Error('Could not find built CSS/JS in dist-demo/index.html')
 
@@ -17,7 +17,8 @@ if (!css || !js) throw new Error('Could not find built CSS/JS in dist-demo/index
 const safeJs = js.replace(/<\/script/gi, '<\\/script')
 
 const out = `<title>ReelFlix</title>
-<meta name="theme-color" content="#0b0b0f">
+<meta name="theme-color" content="#0e0b13">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
 <style>${css}</style>
 <div id="root"></div>
 <script type="module">${safeJs}</script>

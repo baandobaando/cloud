@@ -97,10 +97,10 @@ function DialogView({ pending, onDone }: { pending: Pending; onDone: () => void 
           />
         )}
         <div className="modal__actions">
-          <button type="button" className="btn btn--grey" onClick={cancel}>
+          <button type="button" className="btn btn--secondary" onClick={cancel}>
             Cancel
           </button>
-          <button ref={confirmBtn} className={`btn ${opts.danger ? 'btn--danger' : 'btn--red'}`} disabled={blocked}>
+          <button ref={confirmBtn} className={`btn ${opts.danger ? 'btn--danger' : 'btn--accent'}`} disabled={blocked}>
             {opts.confirmLabel ?? 'OK'}
           </button>
         </div>

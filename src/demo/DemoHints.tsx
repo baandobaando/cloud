@@ -8,7 +8,7 @@ export function DemoAdminHint({ onUse }: { onUse: (email: string, password: stri
       <span>
         {DEMO_ADMIN.email} / {DEMO_ADMIN.password}
       </span>
-      <button type="button" className="btn btn--grey btn--small" onClick={() => onUse(DEMO_ADMIN.email, DEMO_ADMIN.password)}>
+      <button type="button" className="btn btn--secondary btn--small" onClick={() => onUse(DEMO_ADMIN.email, DEMO_ADMIN.password)}>
         Fill in admin login
       </button>
     </div>

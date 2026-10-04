@@ -1,62 +1,75 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { PLANS, formatPrice } from '../../shared/types'
+import { MEMBERSHIP, formatPrice } from '../../shared/types'
 import { IS_DEMO } from '../api'
 import { useSession } from '../state/Session'
 import Poster from '../components/Poster'
+import Logo from '../components/Logo'
+import Icon, { type IconName } from '../components/Icon'
+
+const POINTS: { icon: IconName; title: string; text: string }[] = [
+  { icon: 'phone', title: 'Made for your phone', text: 'Vertical episodes, one to two minutes each. Swipe up for the next one.' },
+  { icon: 'unlock', title: 'No coins, no unlocks', text: 'One membership opens every episode. The first few of each series are free.' },
+  { icon: 'bitcoin', title: 'Pay with crypto', text: 'BTC, Lightning, ETH, USDT and more. Prepaid, so nothing renews behind your back.' },
+]
 
 export default function Landing() {
   const { catalog } = useSession()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
-  const cheapest = Math.min(...PLANS.map((p) => p.priceCents))
+  const wall = catalog?.slice(0, 6) ?? []
 
   return (
     <div className="landing">
-      <div className="landing__wall" aria-hidden>
-        {[...(catalog ?? []), ...(catalog ?? [])].slice(0, 24).map((s, i) => (
-          <Poster key={`${s.id}-${i}`} series={s} />
-        ))}
-      </div>
       <header className="landing__nav">
-        <span className="logo">REELFLIX</span>
-        <Link to="/login" className="btn btn--red btn--small">
-          Sign In
+        <Logo />
+        <Link to="/login" className="btn btn--glass btn--small">
+          Sign in
         </Link>
       </header>
+
       <section className="landing__hero">
-        <h1>Binge-worthy short dramas. One price. Zero coins.</h1>
-        <p className="landing__sub">
-          Every episode of every series from {formatPrice(cheapest)}/month. Pay with crypto, no card needed.
-        </p>
-        <form
-          className="landing__cta"
-          onSubmit={(e) => {
-            e.preventDefault()
-            navigate(`/signup?email=${encodeURIComponent(email)}`)
-          }}
-        >
-          <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <button className="btn btn--red">Get Started ›</button>
-        </form>
-        {IS_DEMO && (
-          <p className="demo-note">
-            Interactive demo. Create any account to look around. Everything stays in this browser and payments are
-            simulated. <Link to="/login">Admin sign-in details</Link> are on the sign-in page.
+        <div className="landing__copy">
+          <span className="eyebrow">Short dramas, binge-sized</span>
+          <h1>Your next obsession is ninety seconds long.</h1>
+          <p className="landing__sub">
+            Every episode of every series for {formatPrice(MEMBERSHIP.priceCents)} a month. Start free, no card needed.
           </p>
-        )}
-        <ul className="landing__points">
-          <li>
-            <strong>📱 Made for your phone</strong>Swipe through vertical episodes, 1–2 minutes each.
-          </li>
-          <li>
-            <strong>🔓 No per-episode unlocks</strong>One membership unlocks everything. First episodes are always free.
-          </li>
-          <li>
-            <strong>₿ Pay with crypto</strong>BTC, Lightning, ETH, USDT and more. Prepaid passes, no auto-charges.
-          </li>
-        </ul>
+          <form
+            className="landing__cta"
+            onSubmit={(e) => {
+              e.preventDefault()
+              navigate(`/signup?email=${encodeURIComponent(email)}`)
+            }}
+          >
+            <input id="landing-email" type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <button className="btn btn--accent btn--lg">Start watching</button>
+          </form>
+          {IS_DEMO && (
+            <p className="demo-note">
+              Interactive demo. Create any account to look around; everything stays in this browser and payments are
+              simulated. <Link to="/login">Admin sign-in details</Link> are on the sign-in page.
+            </p>
+          )}
+        </div>
+        <div className="landing__stack" aria-hidden>
+          {wall.map((s) => (
+            <Poster key={s.id} series={s} />
+          ))}
+        </div>
       </section>
+
+      <ul className="landing__points">
+        {POINTS.map((p) => (
+          <li key={p.title}>
+            <span className="landing__icon">
+              <Icon name={p.icon} />
+            </span>
+            <strong>{p.title}</strong>
+            <span>{p.text}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

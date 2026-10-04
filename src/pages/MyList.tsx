@@ -12,7 +12,7 @@ export default function MyList() {
     <main className="page">
       <h1 className="page__heading">My List</h1>
       {items.length === 0 ? (
-        <p className="muted">Nothing saved yet. Tap “+ My List” on any series to keep it here.</p>
+        <p className="muted">Nothing saved yet. Tap “My List” on any series to keep it here.</p>
       ) : (
         <div className="grid">
           {items.map((s) => (

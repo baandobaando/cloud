@@ -20,7 +20,7 @@ export default function RenewalBanner() {
       ) : (
         <span>Your membership has ended. Renew to keep watching every episode.</span>
       )}
-      <Link to="/plans" className="btn btn--small btn--red">
+      <Link to="/plans" className="btn btn--small btn--accent">
         Renew
       </Link>
     </div>

@@ -4,6 +4,7 @@ import { api, errorMessage } from '../api'
 import { useSession } from '../state/Session'
 import { useToast } from '../components/Toast'
 import { useDialog } from '../components/Dialog'
+import Logo from '../components/Logo'
 
 const MAX_PROFILES = 5
 
@@ -58,7 +59,7 @@ export default function ProfileGate() {
 
   return (
     <div className="gate">
-      <div className="logo logo--big">REELFLIX</div>
+      <Logo size="big" />
       <h1>{managing ? 'Manage profiles' : "Who's watching?"}</h1>
       <div className="gate__profiles">
         {profiles.map((p) => (
@@ -86,16 +87,16 @@ export default function ProfileGate() {
       {adding && (
         <form className="gate__form" onSubmit={add}>
           <input autoFocus placeholder="Name" value={name} maxLength={16} onChange={(e) => setName(e.target.value)} />
-          <button className="btn btn--white" type="submit">
+          <button className="btn btn--primary" type="submit">
             Save
           </button>
-          <button className="btn btn--grey" type="button" onClick={() => setAdding(false)}>
+          <button className="btn btn--secondary" type="button" onClick={() => setAdding(false)}>
             Cancel
           </button>
         </form>
       )}
-      <button className="btn btn--outline" onClick={() => setManaging((m) => !m)}>
-        {managing ? 'Done' : 'Manage Profiles'}
+      <button className="btn btn--glass" onClick={() => setManaging((m) => !m)}>
+        {managing ? 'Done' : 'Manage profiles'}
       </button>
     </div>
   )

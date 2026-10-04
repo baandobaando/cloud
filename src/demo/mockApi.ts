@@ -4,7 +4,7 @@
 import {
   DURATIONS,
   GENRES,
-  PLANS,
+  MEMBERSHIP,
   RATINGS,
   getPlan,
   priceFor,
@@ -147,10 +147,10 @@ function seed(): DB {
 
   // A few example members so the admin dashboard has something to show.
   const examples: [string, PlanId, number, string, string][] = [
-    ['maya.r@example.com', 'standard', 3, 'nowpayments', 'USDT'],
-    ['jordan.k@example.com', 'premium', 12, 'btcpay', 'BTC'],
-    ['sam.t@example.com', 'basic', 1, 'nowpayments', 'ETH'],
-    ['lee.w@example.com', 'standard', 1, 'btcpay', 'BTC'],
+    ['maya.r@example.com', 'member', 3, 'nowpayments', 'USDT'],
+    ['jordan.k@example.com', 'member', 12, 'btcpay', 'BTC'],
+    ['sam.t@example.com', 'member', 1, 'nowpayments', 'ETH'],
+    ['lee.w@example.com', 'member', 1, 'btcpay', 'BTC'],
   ]
   const users: User[] = [
     { id: next(), email: DEMO_ADMIN.email, password: DEMO_ADMIN.password, name: 'Admin', isAdmin: true, createdAt: now - 40 * DAY },
@@ -181,9 +181,9 @@ function seed(): DB {
   orders.push({
     id: 'example-5',
     userId: users[1].id,
-    plan: 'premium',
+    plan: 'member',
     months: 3,
-    amountCents: priceFor(getPlan('premium')!, 3),
+    amountCents: priceFor(MEMBERSHIP, 3),
     provider: 'nowpayments',
     status: 'expired',
     payCurrency: null,
@@ -493,7 +493,7 @@ on('GET', '/billing/config', () => ({
 }))
 on('POST', '/billing/orders', (db, _m, b) => {
   const u = requireUser(db)
-  const plan = getPlan(String(b.plan)) ?? fail(400, 'Unknown plan')
+  const plan = b.plan ? (getPlan(String(b.plan)) ?? fail(400, 'Unknown plan')) : MEMBERSHIP
   const months = Number(b.months)
   if (!DURATIONS.some((d) => d.months === months)) fail(400, 'Unsupported duration')
   if (b.provider !== 'test') fail(400, 'That payment method is not available')
@@ -534,16 +534,16 @@ on('GET', '/admin/stats', (db) => {
   requireAdmin(db)
   const now = Date.now()
   const active = Object.values(db.subs).filter(isActive)
-  const byPlan = Object.fromEntries(PLANS.map((p) => [p.id, 0])) as Record<PlanId, number>
-  active.forEach((s) => byPlan[s.plan]++)
+  const passesByLength: Record<number, number> = Object.fromEntries(DURATIONS.map((d) => [d.months, 0]))
+  db.orders.filter((o) => o.status === 'paid').forEach((o) => (passesByLength[o.months] = (passesByLength[o.months] ?? 0) + 1))
   const viewers = new Map<string, number>()
   Object.values(db.state).forEach((st) => Object.keys(st.progress).forEach((sid) => viewers.set(sid, (viewers.get(sid) ?? 0) + 1)))
   const stats: AdminStats = {
     users: db.users.length,
     newUsers7d: db.users.filter((u) => u.createdAt > now - 7 * DAY).length,
     activeSubscribers: active.length,
-    subscribersByPlan: byPlan,
-    mrrCents: PLANS.reduce((sum, p) => sum + p.priceCents * byPlan[p.id], 0),
+    passesByLength,
+    mrrCents: active.length * MEMBERSHIP.priceCents,
     revenue30dCents: db.payments.filter((p) => p.createdAt > now - 30 * DAY && p.provider !== 'test').reduce((s, p) => s + p.amountCents, 0),
     seriesPublished: db.series.filter((s) => s.published).length,
     seriesDraft: db.series.filter((s) => !s.published).length,
@@ -654,7 +654,7 @@ on('PATCH', '/admin/users/:id', (db, m, b) => {
 on('POST', '/admin/users/:id/access', (db, m, b) => {
   requireAdmin(db)
   const u = db.users.find((x) => x.id === Number(m[1])) ?? fail(404, 'User not found')
-  const plan = getPlan(String(b.plan)) ?? fail(400, 'Unknown plan')
+  const plan = b.plan ? (getPlan(String(b.plan)) ?? fail(400, 'Unknown plan')) : MEMBERSHIP
   db.subs[u.id] = { plan: plan.id, currentPeriodEnd: b.days === null ? null : Date.now() + Number(b.days) * DAY, source: 'comp' }
   return adminUser(db, u)
 })

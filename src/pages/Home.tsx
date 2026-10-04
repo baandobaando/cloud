@@ -29,8 +29,8 @@ export default function Home() {
       <div className="rows">
         <RenewalBanner />
         <Row title="Continue Watching" items={continueWatching} showProgress />
-        <Row title="Top 10 Today" items={trending.slice(0, 10)} ranked />
-        <Row title="New Releases" items={fresh} />
+        <Row title="Top 10 today" items={trending.slice(0, 10)} ranked />
+        <Row title="New releases" items={fresh} />
         <Row title="My List" items={saved} />
         {GENRES.map((g) => (
           <Row key={g} title={g} items={catalog.filter((s) => s.genres.includes(g))} />

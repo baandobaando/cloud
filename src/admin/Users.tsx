@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { PLANS, type AdminUser, type PlanId } from '../../shared/types'
+import type { AdminUser } from '../../shared/types'
 import { api, errorMessage } from '../api'
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
@@ -11,10 +11,9 @@ function accessLabel(u: AdminUser): { text: string; cls: string } {
   const s = u.subscription
   if (!s) return { text: 'Free', cls: '' }
   if (s.currentPeriodEnd !== null && s.currentPeriodEnd < Date.now()) return { text: 'Expired', cls: 'status--expired' }
-  const plan = PLANS.find((p) => p.id === s.plan)?.name ?? s.plan
   const until = s.currentPeriodEnd === null ? 'forever' : `until ${new Date(s.currentPeriodEnd).toLocaleDateString()}`
   const src = s.source === 'comp' ? ' · comp' : s.source === 'test' ? ' · test' : ''
-  return { text: `${plan} ${until}${src}`, cls: 'status--paid' }
+  return { text: `Member ${until}${src}`, cls: 'status--paid' }
 }
 
 export default function Users() {
@@ -97,7 +96,7 @@ export default function Users() {
               return (
                 <tr key={u.id}>
                   <td>
-                    <strong>{u.name}</strong> {u.isAdmin && <span className="pill pill--red pill--tiny">admin</span>}
+                    <strong>{u.name}</strong> {u.isAdmin && <span className="tag tag--accent">admin</span>}
                     <div className="muted small">{u.email}</div>
                   </td>
                   <td><span className={`status ${a.cls}`}>{a.text}</span></td>
@@ -132,14 +131,13 @@ export default function Users() {
 
 function GrantDialog({ user, onClose, onDone }: { user: AdminUser; onClose: () => void; onDone: (u: AdminUser) => void }) {
   const toast = useToast()
-  const [plan, setPlan] = useState<PlanId>(user.subscription?.plan ?? 'standard')
   const [days, setDays] = useState<string>('30')
   const [busy, setBusy] = useState(false)
 
   const submit = async () => {
     setBusy(true)
     try {
-      onDone(await api.post<AdminUser>(`/admin/users/${user.id}/access`, { plan, days: days === 'forever' ? null : Number(days) }))
+      onDone(await api.post<AdminUser>(`/admin/users/${user.id}/access`, { days: days === 'forever' ? null : Number(days) }))
     } catch (err) {
       toast(errorMessage(err), 'error')
       setBusy(false)
@@ -152,12 +150,6 @@ function GrantDialog({ user, onClose, onDone }: { user: AdminUser; onClose: () =
         <h2>Grant free access</h2>
         <p className="muted small">{user.email}. Replaces any current membership end date.</p>
         <label className="field">
-          <span>Plan</span>
-          <select className="input" value={plan} onChange={(e) => setPlan(e.target.value as PlanId)}>
-            {PLANS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </label>
-        <label className="field">
           <span>Duration</span>
           <select className="input" value={days} onChange={(e) => setDays(e.target.value)}>
             <option value="7">7 days</option>
@@ -168,8 +160,8 @@ function GrantDialog({ user, onClose, onDone }: { user: AdminUser; onClose: () =
           </select>
         </label>
         <div className="admin__actions">
-          <button className="btn btn--red" disabled={busy} onClick={submit}>{busy ? 'Granting…' : 'Grant access'}</button>
-          <button className="btn btn--grey" onClick={onClose}>Cancel</button>
+          <button className="btn btn--accent" disabled={busy} onClick={submit}>{busy ? 'Granting…' : 'Grant access'}</button>
+          <button className="btn btn--secondary" onClick={onClose}>Cancel</button>
         </div>
       </div>
     </div>

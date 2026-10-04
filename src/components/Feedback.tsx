@@ -13,7 +13,7 @@ export function ErrorState({ message, onRetry, children }: { message: string; on
     <div className="error-state">
       <p>{message}</p>
       {onRetry && (
-        <button className="btn btn--white" onClick={onRetry}>
+        <button className="btn btn--primary" onClick={onRetry}>
           Try again
         </button>
       )}

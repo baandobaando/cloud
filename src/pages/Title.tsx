@@ -3,6 +3,7 @@ import type { SeriesDetail } from '../../shared/types'
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import Poster from '../components/Poster'
+import Icon from '../components/Icon'
 import Row from '../components/Row'
 import { ErrorState, Spinner } from '../components/Feedback'
 
@@ -16,7 +17,7 @@ export default function Title() {
     return (
       <main className="page">
         <ErrorState message={error} onRetry={reload}>
-          <Link to="/" className="btn btn--grey">
+          <Link to="/" className="btn btn--secondary">
             Back to Home
           </Link>
         </ErrorState>
@@ -35,26 +36,28 @@ export default function Title() {
       <div className="title__hero">
         <Poster series={series} variant="wide" showTitle={false} />
         <button className="icon-btn title__close" onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))} aria-label="Close">
-          ✕
+          <Icon name="close" />
         </button>
       </div>
       <div className="title__body">
         <h1>{series.title}</h1>
         <div className="title__meta">
-          {series.isNew && <span className="pill pill--red">New</span>}
+          {series.isNew && <span className="tag tag--accent">New</span>}
           <span>{series.year}</span>
-          <span className="pill">{series.rating}</span>
+          <span className="tag">{series.rating}</span>
           <span>{series.episodes.length} episodes</span>
           <span>{series.genres.join(' · ')}</span>
         </div>
-        <div className="hero__actions">
+        <div className="actions">
           {series.episodes.length > 0 && (
-            <Link to={`/watch/${series.id}/${resumeEp ?? 1}`} className="btn btn--white">
-              ▶ {resumeEp ? `Resume Episode ${resumeEp}` : 'Play Episode 1'}
+            <Link to={`/watch/${series.id}/${resumeEp ?? 1}`} className="btn btn--primary">
+              <Icon name="play" size={18} />
+              {resumeEp ? `Resume episode ${resumeEp}` : 'Play episode 1'}
             </Link>
           )}
-          <button className="btn btn--grey" onClick={() => toggleMyList(series.id)}>
-            {inList ? '✓ In My List' : '+ My List'}
+          <button className="btn btn--glass" onClick={() => toggleMyList(series.id)}>
+            <Icon name={inList ? 'check' : 'plus'} size={18} />
+            {inList ? 'In My List' : 'My List'}
           </button>
         </div>
         {series.tagline && <p className="title__tagline">{series.tagline}</p>}
@@ -77,7 +80,9 @@ export default function Title() {
                   <span className="ep-row__num">{ep.number}</span>
                   <span className="ep-row__title">{ep.title}</span>
                   <span className="ep-row__dur">{Math.max(1, Math.round(ep.durationSec / 60))}m</span>
-                  <span className="ep-row__icon">{ep.locked ? '🔒' : '▶'}</span>
+                  <span className="ep-row__icon">
+                    <Icon name={ep.locked ? 'lock' : 'play'} size={16} />
+                  </span>
                 </Link>
               </li>
             ))}

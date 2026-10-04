@@ -1,27 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import {
-  DURATIONS,
-  PLANS,
-  formatPrice,
-  priceFor,
-  type BillingConfig,
-  type PaymentProviderId,
-  type PlanId,
-} from '../../shared/types'
+import { DURATIONS, MEMBERSHIP, formatPrice, priceFor, type BillingConfig, type PaymentProviderId } from '../../shared/types'
 import { api, errorMessage } from '../api'
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import { ErrorState, Spinner } from '../components/Feedback'
+import Icon, { type IconName } from '../components/Icon'
 
-const PROVIDER_ICONS: Record<PaymentProviderId, string> = { nowpayments: '🪙', btcpay: '₿', test: '🧪' }
+const PROVIDER_ICONS: Record<PaymentProviderId, IconName> = { nowpayments: 'coins', btcpay: 'bitcoin', test: 'check' }
 
 export default function Plans() {
   const { me } = useSession()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const { data: billing, error, reload } = useApi<BillingConfig>('/billing/config')
-  const [plan, setPlan] = useState<PlanId>(me?.subscription?.plan ?? 'standard')
   const [months, setMonths] = useState<number>(3)
   const [provider, setProvider] = useState<PaymentProviderId | null>(null)
   const [busy, setBusy] = useState(false)
@@ -34,8 +26,7 @@ export default function Plans() {
   if (error) return <main className="page"><ErrorState message={error} onRetry={reload} /></main>
   if (!billing) return <Spinner fullscreen />
 
-  const selectedPlan = PLANS.find((p) => p.id === plan)!
-  const total = priceFor(selectedPlan, months)
+  const total = priceFor(MEMBERSHIP, months)
   const sub = me?.subscription
   const activeUntil = sub?.currentPeriodEnd && sub.currentPeriodEnd > Date.now() ? sub.currentPeriodEnd : null
 
@@ -50,11 +41,7 @@ export default function Plans() {
       } catch {
         /* storage unavailable: buyers just land on Home after paying */
       }
-      const { checkoutUrl } = await api.post<{ orderId: string; checkoutUrl: string }>('/billing/orders', {
-        plan,
-        months,
-        provider,
-      })
+      const { checkoutUrl } = await api.post<{ orderId: string; checkoutUrl: string }>('/billing/orders', { months, provider })
       if (checkoutUrl.startsWith('/')) navigate(checkoutUrl)
       else window.location.assign(checkoutUrl)
     } catch (err) {
@@ -64,92 +51,89 @@ export default function Plans() {
   }
 
   return (
-    <main className="page page--plans">
-      <h1>{me?.isEntitled ? 'Add more time' : 'One membership. Every episode.'}</h1>
-      <p className="muted">
-        {activeUntil
-          ? `You're a member until ${new Date(activeUntil).toLocaleDateString()}. New time is added on top.`
-          : 'No coins. No per-episode unlocks. Prepaid with crypto. Nothing renews automatically.'}
-      </p>
-
-      <h2 className="step">1. Choose your plan</h2>
-      <div className="plans">
-        {PLANS.map((p) => (
-          <button
-            key={p.id}
-            className={`plan ${plan === p.id ? 'plan--active' : ''} ${p.id === 'standard' ? 'plan--featured' : ''}`}
-            onClick={() => setPlan(p.id)}
-            aria-pressed={plan === p.id}
-          >
-            {p.id === 'standard' && <div className="plan__flag">Most Popular</div>}
-            <h3>{p.name}</h3>
-            <div className="plan__price">
-              {formatPrice(p.priceCents)}
-              <span className="muted small">/month</span>
-            </div>
-            <ul>
-              {p.perks.map((perk) => (
-                <li key={perk}>✓ {perk}</li>
-              ))}
-            </ul>
-          </button>
-        ))}
-      </div>
-
-      <h2 className="step">2. How long?</h2>
-      <div className="segmented">
-        {DURATIONS.map((d) => (
-          <button
-            key={d.months}
-            className={`segmented__opt ${months === d.months ? 'segmented__opt--on' : ''}`}
-            onClick={() => setMonths(d.months)}
-            aria-pressed={months === d.months}
-          >
-            <strong>{d.label}</strong>
-            <span>{formatPrice(priceFor(selectedPlan, d.months))}</span>
-            {d.discountPct > 0 && <em>Save {d.discountPct}%</em>}
-          </button>
-        ))}
-      </div>
-
-      <h2 className="step">3. Pay with</h2>
-      {billing.providers.length === 0 ? (
-        <div className="notice">Payments aren't set up yet. Please check back soon.</div>
-      ) : (
-        <div className="providers">
-          {billing.providers.map((p) => (
-            <button
-              key={p.id}
-              className={`provider ${provider === p.id ? 'provider--on' : ''}`}
-              onClick={() => setProvider(p.id)}
-              aria-pressed={provider === p.id}
-            >
-              <span className="provider__icon">{PROVIDER_ICONS[p.id]}</span>
-              <span>
-                <strong>{p.name}</strong>
-                <span className="muted small">{p.description}</span>
-              </span>
-            </button>
+    <main className="page page--checkout">
+      <header className="checkout__intro">
+        <span className="eyebrow">ReelFlix membership</span>
+        <h1>{me?.isEntitled ? 'Add more time' : 'Every episode. One price.'}</h1>
+        <p className="muted">
+          {activeUntil
+            ? `You're a member until ${new Date(activeUntil).toLocaleDateString(undefined, { dateStyle: 'medium' })}. New time is added on top.`
+            : `${formatPrice(MEMBERSHIP.priceCents)} a month, paid in crypto. Nothing renews automatically.`}
+        </p>
+        <ul className="perks">
+          {MEMBERSHIP.perks.map((perk) => (
+            <li key={perk}>
+              <Icon name="check" size={16} />
+              {perk}
+            </li>
           ))}
-        </div>
-      )}
+        </ul>
+      </header>
 
-      <div className="checkout-bar">
-        <div>
-          <div className="muted small">
-            {selectedPlan.name} · {DURATIONS.find((d) => d.months === months)?.label}
-          </div>
-          <div className="checkout-bar__total">{formatPrice(total)}</div>
+      <section className="checkout__box">
+        <h2 className="step">How long?</h2>
+        <div className="options" role="radiogroup" aria-label="Pass length">
+          {DURATIONS.map((d) => {
+            const price = priceFor(MEMBERSHIP, d.months)
+            return (
+              <button
+                key={d.months}
+                role="radio"
+                aria-checked={months === d.months}
+                className={`option ${months === d.months ? 'option--on' : ''}`}
+                onClick={() => setMonths(d.months)}
+              >
+                <span className="option__label">{d.label}</span>
+                <span className="option__price">{formatPrice(price)}</span>
+                <span className="option__note">
+                  {d.months === 1 ? 'Try it out' : `${formatPrice(Math.round(price / d.months))}/mo`}
+                </span>
+                {d.discountPct > 0 && <span className="option__save">Save {d.discountPct}%</span>}
+              </button>
+            )
+          })}
         </div>
-        <button className="btn btn--red" disabled={busy || !provider} onClick={checkout}>
-          {busy ? 'Starting checkout…' : 'Continue to payment'}
-        </button>
-      </div>
-      {checkoutError && <div className="form__error">{checkoutError}</div>}
-      <p className="muted small">
-        Prices in USD. You'll pay the equivalent in your chosen coin at the current rate. Access starts as soon as the
-        payment is confirmed on-chain.
-      </p>
+
+        <h2 className="step">Pay with</h2>
+        {billing.providers.length === 0 ? (
+          <div className="notice">Payments aren't set up yet. Please check back soon.</div>
+        ) : (
+          <div className="options options--stack" role="radiogroup" aria-label="Payment method">
+            {billing.providers.map((p) => (
+              <button
+                key={p.id}
+                role="radio"
+                aria-checked={provider === p.id}
+                className={`option option--row ${provider === p.id ? 'option--on' : ''}`}
+                onClick={() => setProvider(p.id)}
+              >
+                <span className="option__icon">
+                  <Icon name={PROVIDER_ICONS[p.id]} />
+                </span>
+                <span className="option__text">
+                  <strong>{p.name}</strong>
+                  <span className="muted small">{p.description}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="checkout__total">
+          <div>
+            <span className="muted small">Total today</span>
+            <strong>{formatPrice(total)}</strong>
+          </div>
+          <button className="btn btn--accent btn--lg" disabled={busy || !provider} onClick={checkout}>
+            {busy ? 'Starting checkout…' : 'Continue to payment'}
+          </button>
+        </div>
+        {checkoutError && <div className="form__error">{checkoutError}</div>}
+        <p className="muted small">
+          Priced in USD. You pay the equivalent in your chosen coin at the current rate, and access starts once the
+          payment confirms on-chain.
+        </p>
+      </section>
     </main>
   )
 }

@@ -4,15 +4,15 @@ import path from 'node:path'
 import { Router, type Request } from 'express'
 import multer from 'multer'
 import {
+  DURATIONS,
   GENRES,
-  PLANS,
+  MEMBERSHIP,
   RATINGS,
   getPlan,
   type AdminSeriesDetail,
   type AdminStats,
   type AdminUser,
   type Genre,
-  type PlanId,
   type Rating,
   type SeriesInput,
 } from '../shared/types.ts'
@@ -149,16 +149,18 @@ adminRouter.get('/stats', (_req, res) => {
 
   const activeSubs = db
     .prepare('SELECT plan FROM subscriptions WHERE current_period_end IS NULL OR current_period_end > ?')
-    .all(now) as { plan: PlanId }[]
-  const subscribersByPlan = Object.fromEntries(PLANS.map((p) => [p.id, 0])) as Record<PlanId, number>
-  for (const s of activeSubs) subscribersByPlan[s.plan] = (subscribersByPlan[s.plan] ?? 0) + 1
-  const mrrCents = PLANS.reduce((sum, p) => sum + p.priceCents * subscribersByPlan[p.id], 0)
+    .all(now) as { plan: string }[]
+  const mrrCents = activeSubs.reduce((sum, s) => sum + (getPlan(s.plan) ?? MEMBERSHIP).priceCents, 0)
+  const passesByLength: Record<number, number> = Object.fromEntries(DURATIONS.map((d) => [d.months, 0]))
+  for (const r of db.prepare("SELECT months, COUNT(*) AS n FROM orders WHERE status = 'paid' GROUP BY months").all() as { months: number; n: number }[]) {
+    passesByLength[r.months] = r.n
+  }
 
   const stats: AdminStats = {
     users: count('SELECT COUNT(*) AS n FROM users'),
     newUsers7d: count('SELECT COUNT(*) AS n FROM users WHERE created_at > ?', now - 7 * DAY_MS),
     activeSubscribers: activeSubs.length,
-    subscribersByPlan,
+    passesByLength,
     mrrCents,
     revenue30dCents:
       (db.prepare("SELECT COALESCE(SUM(amount_cents), 0) AS n FROM payments WHERE created_at > ? AND provider != 'test'").get(
@@ -366,7 +368,7 @@ adminRouter.patch('/users/:id', (req, res) => {
 adminRouter.post('/users/:id/access', (req, res) => {
   const id = int(req.params.id, 'User', { min: 1 })
   adminUser(id)
-  const plan = getPlan(str(req.body?.plan, 'Plan'))
+  const plan = req.body?.plan ? getPlan(String(req.body.plan)) : MEMBERSHIP
   if (!plan) throw new HttpError(400, 'Unknown plan')
   const days = req.body?.days === null ? null : int(req.body?.days, 'Days', { min: 1, max: 3650 })
   const end = days === null ? null : Date.now() + days * DAY_MS

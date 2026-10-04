@@ -14,6 +14,7 @@ import Poster from '../components/Poster'
 import { ErrorState, Spinner } from '../components/Feedback'
 import { useToast } from '../components/Toast'
 import { useDialog } from '../components/Dialog'
+import Icon from '../components/Icon'
 
 const EMPTY: SeriesInput = {
   title: '',
@@ -141,18 +142,18 @@ export default function SeriesEditor() {
     <>
       <div className="admin__head">
         <div>
-          <Link to="/admin/series" className="link small">← All series</Link>
+          <Link to="/admin/series" className="link small">All series</Link>
           <h1>{isNew ? 'New series' : form.title || 'Untitled'}</h1>
         </div>
         <div className="admin__actions">
           {loaded?.published && (
-            <Link to={`/title/${loaded.id}`} className="btn btn--grey btn--small">
+            <Link to={`/title/${loaded.id}`} className="btn btn--secondary btn--small">
               View in app
             </Link>
           )}
           {!isNew && (
             <button
-              className={`btn btn--small ${form.published ? 'btn--grey' : 'btn--white'}`}
+              className={`btn btn--small ${form.published ? 'btn--secondary' : 'btn--primary'}`}
               disabled={saving}
               onClick={() => {
                 const published = !form.published
@@ -223,7 +224,7 @@ export default function SeriesEditor() {
             Show “NEW” badge
           </label>
           <div className="editor__save">
-            <button className="btn btn--red" disabled={saving || (!dirty && !isNew)}>
+            <button className="btn btn--accent" disabled={saving || (!dirty && !isNew)}>
               {saving ? 'Saving…' : isNew ? 'Create series' : dirty ? 'Save changes' : 'Saved'}
             </button>
             {!isNew && (
@@ -246,12 +247,8 @@ export default function SeriesEditor() {
           )}
           {!loaded?.posterUrl && (
             <>
-              <p className="muted small">Or use generated art:</p>
+              <p className="muted small">No image? The poster is generated from the title and these two colors:</p>
               <div className="field-row">
-                <label className="field">
-                  <span>Emoji</span>
-                  <input className="input" maxLength={16} value={form.emoji} onChange={(e) => set('emoji', e.target.value)} />
-                </label>
                 <label className="field">
                   <span>Color 1</span>
                   <input className="input input--color" type="color" value={form.palette[0]} onChange={(e) => set('palette', [e.target.value, form.palette[1]])} />
@@ -295,7 +292,7 @@ function PosterUpload({ series, onChange }: { series: AdminSeriesDetail; onChang
   return (
     <div className="admin__actions">
       <input ref={input} type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden onChange={(e) => pick(e.target.files?.[0])} />
-      <button type="button" className="btn btn--grey btn--small" disabled={busy} onClick={() => input.current?.click()}>
+      <button type="button" className="btn btn--secondary btn--small" disabled={busy} onClick={() => input.current?.click()}>
         {busy ? 'Uploading…' : series.posterUrl ? 'Replace image' : 'Upload image'}
       </button>
       {series.posterUrl && (
@@ -384,11 +381,11 @@ function Episodes({ series, onChange }: { series: AdminSeriesDetail; onChange: (
         </div>
         <div className="admin__actions">
           <input ref={bulkInput} type="file" accept="video/mp4,video/webm,video/quicktime" multiple hidden onChange={(e) => bulkUpload(e.target.files)} />
-          <button className="btn btn--red btn--small" disabled={busy} onClick={() => bulkInput.current?.click()}>
-            ⬆ Upload videos as new episodes
+          <button className="btn btn--accent btn--small" disabled={busy} onClick={() => bulkInput.current?.click()}>
+            <Icon name="upload" size={16} /> Upload videos as new episodes
           </button>
           <input className="input input--tiny" type="number" min={1} max={200} value={count} onChange={(e) => setCount(Math.max(1, Number(e.target.value)))} aria-label="Number of episodes" />
-          <button className="btn btn--grey btn--small" disabled={busy} onClick={addEmpty}>
+          <button className="btn btn--secondary btn--small" disabled={busy} onClick={addEmpty}>
             + Add empty
           </button>
         </div>
@@ -487,7 +484,7 @@ function EpisodeRow({ ep, free, isLast, onChange }: { ep: AdminEpisode; free: bo
     <tr>
       <td className="num">
         <strong>{ep.number}</strong>
-        {free && <div className="pill pill--tiny">free</div>}
+        {free && <div className="tag tag--tiny">free</div>}
       </td>
       <td>
         <input
@@ -512,14 +509,14 @@ function EpisodeRow({ ep, free, isLast, onChange }: { ep: AdminEpisode; free: bo
             }}
           >
             <input className="input input--small" autoFocus placeholder="https://…/episode.mp4" value={url} onChange={(e) => setUrl(e.target.value)} />
-            <button className="btn btn--white btn--small">Save</button>
+            <button className="btn btn--primary btn--small">Save</button>
             <button type="button" className="btn btn--link small" onClick={() => setEditingUrl(false)}>Cancel</button>
           </form>
         ) : (
           <>
             {ep.videoUrl ? (
               <a href={ep.videoUrl} target="_blank" rel="noreferrer" className="status status--paid">
-                {isUploaded ? 'Uploaded' : 'Linked'} ↗
+                {isUploaded ? 'Uploaded' : 'Linked'}
               </a>
             ) : (
               <span className="status status--failed">Missing</span>
@@ -532,8 +529,8 @@ function EpisodeRow({ ep, free, isLast, onChange }: { ep: AdminEpisode; free: bo
       </td>
       <td className="num muted">{Math.floor(ep.durationSec / 60)}:{String(ep.durationSec % 60).padStart(2, '0')}</td>
       <td className="row-actions">
-        <button className="icon-btn icon-btn--small" disabled={ep.number === 1} title="Move up" onClick={() => act(() => api.post(`/admin/episodes/${ep.id}/move`, { direction: 'up' }))}>↑</button>
-        <button className="icon-btn icon-btn--small" disabled={isLast} title="Move down" onClick={() => act(() => api.post(`/admin/episodes/${ep.id}/move`, { direction: 'down' }))}>↓</button>
+        <button className="icon-btn icon-btn--small" disabled={ep.number === 1} title="Move up" onClick={() => act(() => api.post(`/admin/episodes/${ep.id}/move`, { direction: 'up' }))} aria-label="Move up"><Icon name="up" size={16} /></button>
+        <button className="icon-btn icon-btn--small" disabled={isLast} title="Move down" onClick={() => act(() => api.post(`/admin/episodes/${ep.id}/move`, { direction: 'down' }))} aria-label="Move down"><Icon name="down" size={16} /></button>
         <button
           className="icon-btn icon-btn--small"
           title="Delete episode"
@@ -547,7 +544,7 @@ function EpisodeRow({ ep, free, isLast, onChange }: { ep: AdminEpisode; free: bo
             if (ok) act(() => api.del(`/admin/episodes/${ep.id}`))
           }}
         >
-          🗑
+          <Icon name="trash" size={16} />
         </button>
       </td>
     </tr>

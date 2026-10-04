@@ -4,6 +4,7 @@ import type { EpisodeView as Episode, SeriesDetail as Series } from '../../share
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import Poster from '../components/Poster'
+import Icon from '../components/Icon'
 import { ErrorState, Spinner } from '../components/Feedback'
 
 /** Vertical, swipeable episode feed — one full-screen episode per slide. */
@@ -111,7 +112,7 @@ function Feed({ series, startEpisode: requestedEpisode }: { series: Series; star
 
       <div className="watch__top">
         <Link to={`/title/${series.id}`} className="icon-btn" aria-label="Back">
-          ←
+          <Icon name="back" />
         </Link>
         <div className="watch__meta">
           <strong>{series.title}</strong>
@@ -125,21 +126,24 @@ function Feed({ series, startEpisode: requestedEpisode }: { series: Series; star
       {canWatch(current) && (
         <div className="watch__side">
           <button className="side-btn" onClick={() => setMuted((m) => !m)} aria-label={muted ? 'Unmute' : 'Mute'}>
-            {muted ? '🔇' : '🔊'}
+            <Icon name={muted ? 'mute' : 'volume'} size={24} />
             <span>{muted ? 'Muted' : 'Sound'}</span>
           </button>
           <button className="side-btn" onClick={() => setDrawerOpen(true)}>
-            ☰<span>Episodes</span>
+            <Icon name="list" size={24} />
+            <span>Episodes</span>
           </button>
           <button className="side-btn" onClick={() => goTo(Math.max(current - 1, 1))} disabled={current === 1}>
-            ▲<span>Prev</span>
+            <Icon name="up" size={24} />
+            <span>Prev</span>
           </button>
           <button
             className="side-btn"
             onClick={() => goTo(Math.min(current + 1, series.episodes.length))}
             disabled={current === series.episodes.length}
           >
-            ▼<span>Next</span>
+            <Icon name="down" size={24} />
+            <span>Next</span>
           </button>
         </div>
       )}
@@ -224,7 +228,7 @@ function EpisodePlayer({ episode, active, startAt, muted, onMutedChange, onProgr
         onPlay={() => setPaused(false)}
         onEnded={onEnded}
       />
-      {paused && <div className="player__paused">▶</div>}
+      {paused && <div className="player__paused"><Icon name="play" size={64} /></div>}
       <div className="player__caption">
         <span className="player__ep">EP {episode.number}</span> {episode.title}
       </div>
@@ -240,15 +244,15 @@ function Paywall({ series, episode }: { series: Series; episode: Episode }) {
     <div className="paywall">
       <Poster series={series} variant="wide" showTitle={false} />
       <div className="paywall__body">
-        <div className="paywall__lock">🔒</div>
+        <div className="paywall__lock"><Icon name="lock" size={28} /></div>
         <h2>Episode {episode.number} is for members</h2>
         <p>
           {series.freeEpisodes > 0 ? `You watched the first ${series.freeEpisodes} free. ` : ''}Become a member to watch all{' '}
           {series.episodes.length} episodes of <em>{series.title}</em> and every other series, with no coins and no
           per-episode unlocks. Pay with crypto.
         </p>
-        <Link to={`/plans?return=${encodeURIComponent(`/watch/${series.id}/${episode.number}`)}`} className="btn btn--red btn--block">
-          See Plans
+        <Link to={`/plans?return=${encodeURIComponent(`/watch/${series.id}/${episode.number}`)}`} className="btn btn--accent btn--block">
+          Join for $9.99/month
         </Link>
       </div>
     </div>
@@ -270,7 +274,7 @@ function EpisodeDrawer({ series, current, canWatch, onPick, onClose }: DrawerPro
         <div className="drawer__head">
           <strong>{series.title}</strong>
           <button className="icon-btn" onClick={onClose} aria-label="Close">
-            ✕
+            <Icon name="close" />
           </button>
         </div>
         <div className="ep-grid">
@@ -281,7 +285,7 @@ function EpisodeDrawer({ series, current, canWatch, onPick, onClose }: DrawerPro
               onClick={() => onPick(ep.number)}
             >
               {ep.number}
-              {!canWatch(ep.number) && <span className="ep-chip__lock">🔒</span>}
+              {!canWatch(ep.number) && <Icon name="lock" size={12} className="ep-chip__lock" />}
             </button>
           ))}
         </div>
@@ -294,7 +298,7 @@ function NotFound({ message, onRetry }: { message: string; onRetry?: () => void 
   return (
     <div className="empty">
       <ErrorState message={message} onRetry={onRetry}>
-        <Link to="/" className="btn btn--grey">
+        <Link to="/" className="btn btn--secondary">
           Back to Home
         </Link>
       </ErrorState>

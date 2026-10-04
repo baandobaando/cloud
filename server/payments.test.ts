@@ -29,10 +29,10 @@ function npSign(payload: Record<string, unknown>, secret = 'np_ipn_secret') {
 }
 
 let userId: number
-function createOrder(id: string, months = 1, provider = 'nowpayments', amountCents = 799) {
+function createOrder(id: string, months = 1, provider = 'nowpayments', amountCents = 999) {
   db.prepare(
     `INSERT INTO orders (id, user_id, plan, months, amount_cents, provider, status, created_at)
-     VALUES (?, ?, 'standard', ?, ?, ?, 'pending', ?)`,
+     VALUES (?, ?, 'member', ?, ?, ?, 'pending', ?)`,
   ).run(id, userId, months, amountCents, provider, Date.now())
 }
 
@@ -48,7 +48,7 @@ describe('NOWPayments IPN', () => {
     payment_id: 123,
     payment_status: 'finished',
     order_id: 'order-1',
-    price_amount: 7.99,
+    price_amount: 9.99,
     price_currency: 'usd',
     pay_currency: 'btc',
     invoice_id: 555,
@@ -57,7 +57,7 @@ describe('NOWPayments IPN', () => {
   test('accepts a correctly signed payload (keys in any order)', async () => {
     const body = Buffer.from(JSON.stringify({ ...payload, invoice_id: 555, payment_id: 123 }))
     const result = await nowpayments.parseWebhook(body, { 'x-nowpayments-sig': npSign(payload) })
-    assert.deepEqual(result, { orderId: 'order-1', invoiceId: '555', status: 'paid', amountCents: 799, payCurrency: 'BTC' })
+    assert.deepEqual(result, { orderId: 'order-1', invoiceId: '555', status: 'paid', amountCents: 999, payCurrency: 'BTC' })
   })
 
   test('rejects a tampered payload', async () => {
@@ -122,7 +122,7 @@ describe('fulfillOrder', () => {
     assert.equal(fulfillOrder('f-1', 'BTC'), false)
 
     const sub = getSubscription(userId)!
-    assert.equal(sub.plan, 'standard')
+    assert.equal(sub.plan, 'member')
     assert.equal(sub.source, 'crypto')
     assert.ok(sub.currentPeriodEnd! >= before + 30 * DAY && sub.currentPeriodEnd! <= Date.now() + 30 * DAY)
 

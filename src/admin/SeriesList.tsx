@@ -24,7 +24,7 @@ export default function SeriesList() {
     <>
       <div className="admin__head">
         <h1>Series</h1>
-        <Link to="/admin/series/new" className="btn btn--red">+ New series</Link>
+        <Link to="/admin/series/new" className="btn btn--accent">+ New series</Link>
       </div>
       <div className="toolbar">
         <input className="input" placeholder="Search series…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -46,7 +46,7 @@ export default function SeriesList() {
           <tbody>
             {rows.map((s) => (
               <tr key={s.id}>
-                <td className="table__thumb"><Link to={`/admin/series/${s.id}`}><Poster series={s} showTitle={false} /></Link></td>
+                <td className="table__thumb"><Link to={`/admin/series/${s.id}`} aria-label={s.title}><Poster series={s} showTitle={false} /></Link></td>
                 <td>
                   <Link to={`/admin/series/${s.id}`} className="table__title">{s.title}</Link>
                   <div className="muted small">{s.genres.join(' · ')}</div>

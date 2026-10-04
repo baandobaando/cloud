@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useSession } from '../state/Session'
+import Icon from './Icon'
+import Logo from './Logo'
 
 export default function Navbar() {
   const { me, activeProfile, selectProfile, logout } = useSession()
@@ -30,9 +32,7 @@ export default function Navbar() {
 
   return (
     <header className={`navbar ${scrolled ? 'navbar--solid' : ''}`}>
-      <Link to="/" className="logo">
-        REELFLIX
-      </Link>
+      <Logo />
       <nav className="navbar__links">
         <NavLink to="/" end>
           Home
@@ -41,12 +41,12 @@ export default function Navbar() {
         <NavLink to="/my-list">My List</NavLink>
       </nav>
       <div className="navbar__right">
-        <NavLink to="/search" className="icon-btn" aria-label="Search">
-          🔍
+        <NavLink to="/search" className="icon-btn icon-btn--ghost" aria-label="Search">
+          <Icon name="search" />
         </NavLink>
         {me && !me.isEntitled && (
-          <Link to="/plans" className="btn btn--small btn--red">
-            Subscribe
+          <Link to="/plans" className="btn btn--small btn--accent">
+            Join for $9.99
           </Link>
         )}
         <div className="menu" ref={menuRef}>
@@ -71,19 +71,19 @@ export default function Navbar() {
                     </button>
                   ))}
               <button className="menu__item" onClick={() => { selectProfile(null); setMenuOpen(false) }}>
-                Manage profiles
+                <Icon name="users" size={18} /> Switch or manage profiles
               </button>
               <button className="menu__item" onClick={() => go('/account')}>
-                Account &amp; billing
+                <Icon name="user" size={18} /> Account &amp; membership
               </button>
               {me?.isAdmin && (
                 <button className="menu__item" onClick={() => go('/admin')}>
-                  Admin panel
+                  <Icon name="settings" size={18} /> Admin panel
                 </button>
               )}
               <hr />
               <button className="menu__item" onClick={() => { setMenuOpen(false); logout().then(() => navigate('/')) }}>
-                Sign out
+                <Icon name="logout" size={18} /> Sign out
               </button>
             </div>
           )}
@@ -91,16 +91,20 @@ export default function Navbar() {
       </div>
       <nav className="bottom-tabs">
         <NavLink to="/" end>
-          <span>🏠</span>Home
+          <Icon name="home" />
+          Home
         </NavLink>
         <NavLink to="/new">
-          <span>🔥</span>New
+          <Icon name="flame" />
+          New
         </NavLink>
         <NavLink to="/search">
-          <span>🔍</span>Search
+          <Icon name="search" />
+          Search
         </NavLink>
         <NavLink to="/my-list">
-          <span>➕</span>My List
+          <Icon name="bookmark" />
+          My List
         </NavLink>
       </nav>
     </header>

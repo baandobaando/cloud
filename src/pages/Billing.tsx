@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { PLANS, formatPrice, type OrderView } from '../../shared/types'
+import { formatPrice, type OrderView } from '../../shared/types'
+import Icon from '../components/Icon'
 import { api, errorMessage } from '../api'
 import { useSession } from '../state/Session'
 import { ErrorState, Spinner } from '../components/Feedback'
 
-const planName = (id: string) => PLANS.find((p) => p.id === id)?.name ?? id
 
 function takeReturnPath(): string {
   try {
@@ -54,18 +54,18 @@ export function OrderStatusPage() {
   if (error && !order) return <main className="page"><ErrorState message={error} /></main>
   if (!order) return <Spinner fullscreen />
 
-  const summary = `${planName(order.plan)} · ${order.months} month${order.months > 1 ? 's' : ''} · ${formatPrice(order.amountCents)}`
+  const summary = `Membership · ${order.months} month${order.months > 1 ? 's' : ''} · ${formatPrice(order.amountCents)}`
 
   return (
     <main className="page page--center">
       <div className="status-card">
         {order.status === 'paid' ? (
           <>
-            <div className="status-card__icon status-card__icon--ok">✓</div>
+            <div className="status-card__icon status-card__icon--ok"><Icon name="check" size={30} /></div>
             <h1>You're in!</h1>
             <p className="muted">{summary}</p>
             <p>Payment confirmed. Every episode of every series is now unlocked.</p>
-            <button className="btn btn--red btn--block" onClick={() => navigate(takeReturnPath())}>
+            <button className="btn btn--accent btn--block" onClick={() => navigate(takeReturnPath())}>
               Start Watching
             </button>
           </>
@@ -78,7 +78,7 @@ export function OrderStatusPage() {
               No access was granted. If you already sent funds, they're still being tracked. Contact support with
               order <code>{order.id.slice(0, 8)}</code>.
             </p>
-            <Link to="/plans" className="btn btn--red btn--block">
+            <Link to="/plans" className="btn btn--accent btn--block">
               Try Again
             </Link>
           </>
@@ -94,9 +94,9 @@ export function OrderStatusPage() {
             </p>
             {order.checkoutUrl && order.status === 'pending' && (
               order.checkoutUrl.startsWith('/') ? (
-                <Link to={order.checkoutUrl} className="btn btn--grey btn--block">Open checkout</Link>
+                <Link to={order.checkoutUrl} className="btn btn--secondary btn--block">Open checkout</Link>
               ) : (
-                <a href={order.checkoutUrl} className="btn btn--grey btn--block" rel="noopener noreferrer">
+                <a href={order.checkoutUrl} className="btn btn--secondary btn--block" rel="noopener noreferrer">
                   Open checkout
                 </a>
               )
@@ -139,7 +139,7 @@ export function TestCheckout() {
     <main className="test-checkout">
       <div className="test-checkout__card">
         <div className="test-checkout__warn">TEST MODE: no real payment</div>
-        <div className="muted small">ReelFlix · {planName(order.plan)} · {order.months} mo</div>
+        <div className="muted small">ReelFlix membership · {order.months} mo</div>
         <div className="test-checkout__amount">{formatPrice(order.amountCents)}</div>
         <label className="muted small" htmlFor="coin">
           Pay with
@@ -155,7 +155,7 @@ export function TestCheckout() {
           ))}
         </div>
         <code className="test-checkout__addr">bc1qtest{orderId.replace(/-/g, '').slice(0, 30)}</code>
-        <button className="btn btn--red btn--block" disabled={busy || order.status === 'paid'} onClick={pay}>
+        <button className="btn btn--accent btn--block" disabled={busy || order.status === 'paid'} onClick={pay}>
           {busy ? 'Confirming…' : order.status === 'paid' ? 'Already paid' : 'Simulate successful payment'}
         </button>
         <Link to={`/billing/order/${orderId}`} className="btn btn--link">
