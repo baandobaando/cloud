@@ -4685,3 +4685,90 @@ video.feature-hero__preview {
 @keyframes halo-spin {
   to { transform: rotate(360deg); }
 }
+
+/* Inferno, refined: both columns identical and in sync, with light flowing upward through them. */
+.feature-hero[data-glow='inferno'] .feature-hero__beams span {
+  overflow: hidden;
+  animation: beam-pulse 6s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.feature-hero[data-glow='inferno'] .feature-hero__beams span:first-child,
+.feature-hero[data-glow='inferno'] .feature-hero__beams span:last-child {
+  left: auto;
+  right: auto;
+}
+
+.feature-hero[data-glow='inferno'] .feature-hero__beams span:first-child {
+  left: clamp(-190px, -9vw, -80px);
+}
+
+.feature-hero[data-glow='inferno'] .feature-hero__beams span:last-child {
+  right: clamp(-190px, -9vw, -80px);
+}
+
+/* Bright bands drifting up the column, like heat rising. */
+.feature-hero[data-glow='inferno'] .feature-hero__beams span::after {
+  content: '';
+  position: absolute;
+  inset: 0 22%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    rgba(255, 170, 90, 0) 60px,
+    rgba(255, 170, 90, 0.75) 150px,
+    rgba(255, 60, 60, 0) 240px,
+    transparent 320px
+  );
+  background-size: 100% 320px;
+  mix-blend-mode: screen;
+  animation: beam-flow 4.5s linear infinite;
+}
+
+@keyframes beam-flow {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 -320px;
+  }
+}
+
+/* Centre the dark vignette so both sides read the same, and drop the lopsided cover-tinted wash. */
+.feature-hero[data-glow='inferno'] .feature-hero__beams::after {
+  background: radial-gradient(40% 64% at 50% 50%, rgba(10, 10, 11, 0.85), transparent 80%);
+}
+
+.feature-hero[data-glow='inferno'] .feature-hero__wash {
+  background: radial-gradient(60% 80% at 50% 40%, color-mix(in srgb, var(--hero-a) 60%, #ff0033 40%), transparent 72%), var(--bg);
+  opacity: 0.55;
+}
+
+.feature-hero[data-glow='inferno'] .feature-hero__ambient::after {
+  background:
+    radial-gradient(60% 70% at 50% 50%, rgba(10, 10, 11, 0.55), rgba(10, 10, 11, 0.85)),
+    linear-gradient(0deg, var(--bg) 0%, transparent 35%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feature-hero__beams span,
+  .feature-hero__beams span::after {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .feature-hero[data-glow='inferno'] .feature-hero__beams span {
+    width: 150px;
+    filter: blur(28px) saturate(1.6);
+    box-shadow: 0 0 80px 30px rgba(255, 0, 51, 0.5);
+  }
+
+  .feature-hero[data-glow='inferno'] .feature-hero__beams span:first-child {
+    left: -95px;
+  }
+
+  .feature-hero[data-glow='inferno'] .feature-hero__beams span:last-child {
+    right: -95px;
+  }
+}
