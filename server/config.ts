@@ -39,6 +39,15 @@ export const config = {
     /** Minutes between automatic syncs with Bunny (minimum 1). */
     syncMinutes: Math.max(1, Number(env.BUNNY_SYNC_MINUTES) || 5),
   },
+  /**
+   * iPhone app subscriptions (Apple in-app purchase) through RevenueCat: the secret API key (sk_…) for looking up a
+   * subscriber, the Authorization value set on the RevenueCat webhook, and the entitlement that means "member".
+   */
+  revenuecat: {
+    secretKey: env.REVENUECAT_SECRET_KEY ?? '',
+    webhookAuth: env.REVENUECAT_WEBHOOK_AUTH ?? '',
+    entitlement: env.REVENUECAT_ENTITLEMENT ?? 'members',
+  },
   /** Sign in with Google: an OAuth client (Web application) from Google Cloud Console. */
   google: {
     clientId: env.GOOGLE_CLIENT_ID ?? '',

@@ -1,4 +1,4 @@
-import { PRIVACY_HTML, TERMS_HTML, legalArticle } from '../../shared/legal'
+import { PRIVACY_HTML, SUPPORT_HTML, TERMS_HTML, legalArticle } from '../../shared/legal'
 import { usePageTitle } from '../usePageTitle'
 
 // The text lives in shared/legal.ts so the server can also send it as plain HTML (for crawlers and Google's review).
@@ -14,4 +14,9 @@ export function Privacy() {
 export function Terms() {
   usePageTitle('Terms of Service')
   return <LegalPage title="Terms of Service" body={TERMS_HTML} />
+}
+
+export function Support() {
+  usePageTitle('Help & Support')
+  return <main className="page" dangerouslySetInnerHTML={{ __html: legalArticle('Help & Support', SUPPORT_HTML, 'Support') }} />
 }

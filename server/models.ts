@@ -106,7 +106,7 @@ export function getSubscription(userId: number): SubscriptionView | null {
     .prepare('SELECT plan, current_period_end, source, stripe_subscription_id, status, cancel_at_period_end, trial_end FROM subscriptions WHERE user_id = ?')
     .get(userId) as SubscriptionRow | undefined
   if (!row) return null
-  const live = !!row.stripe_subscription_id && LIVE_SUBSCRIPTION_STATUSES.includes(row.status ?? '')
+  const live = (!!row.stripe_subscription_id || row.source === 'apple') && LIVE_SUBSCRIPTION_STATUSES.includes(row.status ?? '')
   return {
     plan: row.plan as PlanId,
     currentPeriodEnd: row.current_period_end,

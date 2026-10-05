@@ -20,6 +20,7 @@ import { stripeProvider } from './payments/stripe.ts'
 import { testProvider } from './payments/test.ts'
 import { WebhookSignatureError, type PaymentProvider } from './payments/types.ts'
 import { completeSubscriptionOrder, handleSubscriptionEvent, subscriptionRouter } from './subscriptions.ts'
+import { revenuecatRouter } from './revenuecat.ts'
 
 const PROVIDERS: PaymentProvider[] = [stripeProvider, btcpay, testProvider]
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -168,6 +169,8 @@ for (const p of [stripeProvider, btcpay]) {
     res.json({ ok: true })
   })
 }
+
+billingRouter.use(revenuecatRouter)
 
 // ----- Signed-in routes -----
 

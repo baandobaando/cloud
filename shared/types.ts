@@ -125,7 +125,7 @@ export interface SubscriptionView {
   /** Unix ms when access ends. Null for complimentary access with no end date. */
   currentPeriodEnd: number | null
   /** 'card' = paid through Stripe, 'crypto' = paid through BTCPay (or the old NOWPayments). */
-  source: 'card' | 'crypto' | 'test' | 'comp'
+  source: 'card' | 'apple' | 'crypto' | 'test' | 'comp'
   /** Monthly Stripe subscription that will charge again at currentPeriodEnd. */
   renews?: boolean
   /** Monthly subscription the member cancelled: access runs to currentPeriodEnd, then stops. */

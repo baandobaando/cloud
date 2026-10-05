@@ -12,7 +12,7 @@ import { startStripeAccountMonitor } from './payments/stripe.ts'
 import { catalogRouter, mediaRouter, publicCatalog } from './catalog.ts'
 import { config, isProduction } from './config.ts'
 import { HttpError, errorHandler } from './http.ts'
-import { HOME_SUMMARY_HTML, PRIVACY_HTML, TERMS_HTML, legalArticle } from '../shared/legal.ts'
+import { HOME_SUMMARY_HTML, PRIVACY_HTML, SUPPORT_HTML, TERMS_HTML, legalArticle } from '../shared/legal.ts'
 
 const app = express()
 app.disable('x-powered-by')
@@ -67,6 +67,7 @@ if (isProduction && fs.existsSync(distDir)) {
     '/': page(null, `<main class="page prerender">${HOME_SUMMARY_HTML}</main>`),
     '/privacy': page('Privacy Policy', `<main class="page">${legalArticle('Privacy Policy', PRIVACY_HTML)}</main>`),
     '/terms': page('Terms of Service', `<main class="page">${legalArticle('Terms of Service', TERMS_HTML)}</main>`),
+    '/support': page('Help & Support', `<main class="page">${legalArticle('Help & Support', SUPPORT_HTML, 'Support')}</main>`),
   }
   // The catalog and the viewer's account go into the page itself, so the app can draw the first screen as soon as its
   // script runs instead of waiting on two more round trips. The catalog is the same for everyone, so it's cached briefly.

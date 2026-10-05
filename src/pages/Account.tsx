@@ -90,7 +90,7 @@ export default function Account() {
         ) : sub && (sub.renews || sub.cancelAtPeriodEnd) ? (
           <>
             <p className="panel__big">
-              Member <span className="tag">{sub.trialEndsAt ? 'Free trial' : 'Monthly'}</span>
+              Member <span className="tag">{sub.trialEndsAt ? 'Free trial' : sub.source === 'apple' ? 'App Store' : 'Monthly'}</span>
             </p>
             <p className="muted">
               {sub.cancelAtPeriodEnd
@@ -99,7 +99,11 @@ export default function Account() {
                   ? `Your free trial ends on ${longDate(sub.trialEndsAt)}. Then ${formatPrice(MEMBERSHIP.priceCents)} a month.`
                   : `${formatPrice(MEMBERSHIP.priceCents)} a month. Next charge on ${longDate(sub.currentPeriodEnd!)}.`}
             </p>
-            {sub.cancelAtPeriodEnd ? (
+            {sub.source === 'apple' ? (
+              <p className="muted small">
+                Billed through the App Store. To cancel or change it, open Settings on your iPhone, tap your name, then Subscriptions.
+              </p>
+            ) : sub.cancelAtPeriodEnd ? (
               <button className="btn btn--primary" disabled={busy} onClick={() => setRenewal(true)}>
                 Keep my membership
               </button>

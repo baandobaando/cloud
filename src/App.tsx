@@ -14,7 +14,7 @@ import Watch from './pages/Watch'
 import Plans from './pages/Plans'
 import Account from './pages/Account'
 import { OrderStatusPage, TestCheckout } from './pages/Billing'
-import { Privacy, Terms } from './pages/Legal'
+import { Privacy, Support, Terms } from './pages/Legal'
 import NotFound from './pages/NotFound'
 import { usePageViews } from './usePageViews'
 
@@ -55,6 +55,7 @@ export default function App() {
                 <Route path="/title/:seriesId" element={<Title />} />
                 <Route path="/plans" element={<Plans />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/support" element={<Support />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
@@ -97,6 +98,7 @@ export default function App() {
               <Route path="/title/:seriesId" element={<Title />} />
               <Route path="/plans" element={<Plans />} />
               <Route path="/privacy" element={<Privacy />} />
+                <Route path="/support" element={<Support />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/account" element={<Account />} />
               <Route path="/billing/order/:orderId" element={<OrderStatusPage />} />

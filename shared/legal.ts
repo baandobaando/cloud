@@ -4,7 +4,7 @@
  */
 
 export const CONTACT_EMAIL = 'bingetubee@gmail.com'
-export const LEGAL_UPDATED = 'October 4, 2026'
+export const LEGAL_UPDATED = 'October 5, 2026'
 
 const contact = `<a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>`
 
@@ -129,6 +129,12 @@ watching on BingeTube you agree to them. If you do not agree, please do not use 
   <li>Because access starts immediately, payments are generally non-refundable. If something went wrong with a payment or your access,
   contact us and we will look into it.</li>
   <li>We may change prices. We will tell you before a price change applies to your membership, and you can cancel before it does.</li>
+  <li><strong>Subscribing in the iPhone app.</strong> If you subscribe in the BingeTube app, payment is charged to your Apple ID when you
+  confirm the purchase. The subscription renews automatically unless you turn off auto-renew at least 24 hours before the end of the
+  current period, and your Apple ID is charged for renewal within 24 hours before the period ends. You can manage or cancel it in your
+  Apple ID settings (Settings, your name, Subscriptions). Any unused part of a free trial ends when you buy a subscription. Refunds for App
+  Store purchases are handled by Apple. Your use of the app is also subject to Apple's standard
+  <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" rel="noopener">Licensed Application End User License Agreement</a>.</li>
 </ul>
 
 <h2>3. Acceptable use</h2>
@@ -177,7 +183,45 @@ one- to two-minute episodes. The first episodes of every series are free; a $9.9
 `
 
 /** Wraps a legal document the way the Privacy and Terms pages show it. */
-export function legalArticle(title: string, body: string): string {
-  return `<article class="container legal"><header class="legal__head"><span class="eyebrow">Legal</span><h1>${title}</h1>
+export function legalArticle(title: string, body: string, eyebrow = 'Legal'): string {
+  return `<article class="container legal"><header class="legal__head"><span class="eyebrow">${eyebrow}</span><h1>${title}</h1>
 <p class="muted small">Last updated ${LEGAL_UPDATED}</p></header>${body}</article>`
 }
+
+export const SUPPORT_HTML = `
+<p>We're here to help with your account, membership, payments and playback, on the website and the iPhone app.</p>
+
+<h2>Contact us</h2>
+<p>Email ${contact}. We usually reply within one business day. Please include the email address of your BingeTube account and, for
+playback problems, the show and episode.</p>
+
+<h2>Membership and billing</h2>
+<ul>
+  <li><strong>Price.</strong> $9.99 a month, renewing automatically until you cancel. New accounts may get a free trial first.</li>
+  <li><strong>Cancel on the website.</strong> Go to your <a href="/account">Account</a> page and choose “Cancel membership”. You keep
+  access until the end of the month you've paid for.</li>
+  <li><strong>Cancel on iPhone</strong> (if you subscribed in the app). Open <em>Settings</em>, tap your name, then
+  <em>Subscriptions</em>, choose BingeTube and tap <em>Cancel Subscription</em>. Apple handles these subscriptions, so they can't be
+  cancelled from our website.</li>
+  <li><strong>Refunds.</strong> For website payments, email us. For App Store purchases, request a refund from Apple at
+  <a href="https://reportaproblem.apple.com" rel="noopener">reportaproblem.apple.com</a>.</li>
+  <li><strong>Restore a purchase on a new iPhone.</strong> Sign in, open the membership screen and tap “Restore purchases”.</li>
+  <li><strong>One membership everywhere.</strong> Your membership works on the website and in the app with the same account.</li>
+</ul>
+
+<h2>Account</h2>
+<ul>
+  <li><strong>Forgot your password?</strong> Email us from the address on your account and we'll help you back in. If you signed up with
+  Google or Apple, just use that button again.</li>
+  <li><strong>Delete your account.</strong> On the website: Account page, “Delete account”. In the app: Account tab, “Delete account”.
+  This permanently removes your account, My List and watch history. Cancel any App Store subscription separately in iPhone Settings.</li>
+</ul>
+
+<h2>Playback</h2>
+<ul>
+  <li>Episodes need a stable internet connection; on slow connections the quality lowers automatically.</li>
+  <li>If an episode won't start, check your connection, then close and reopen the episode. If it still fails, email us the show and
+  episode number.</li>
+</ul>
+
+<p>See also our <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>.</p>`

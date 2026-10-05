@@ -40,7 +40,7 @@ export default function Footer() {
         </nav>
       </div>
       <p className="footer__legal muted small">
-        © {year} BingeTube · <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> · Secure payments by Stripe.
+        © {year} BingeTube · <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> · <Link to="/support">Help</Link> · Secure payments by Stripe.
       </p>
     </footer>
   )
