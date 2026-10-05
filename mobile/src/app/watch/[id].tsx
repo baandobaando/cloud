@@ -24,18 +24,25 @@ export default function Watch() {
   const [error, setError] = useState<string | null>(null)
   const [active, setActive] = useState(0)
   const listRef = useRef<FlatList<EpisodeView>>(null)
+  const { me } = useSession()
+  // The episode on screen, so reloading after a purchase stays on it instead of jumping back to where we started.
+  const current = useRef<number | null>(null)
 
   const load = useCallback(() => {
     setError(null)
     api.get<SeriesDetail>(`/series/${encodeURIComponent(id)}`).then(
       (s) => {
         setSeries(s)
-        setActive(Math.max(0, s.episodes.findIndex((e) => e.number === Number(ep ?? 1))))
+        setActive(Math.max(0, s.episodes.findIndex((e) => e.number === (current.current ?? Number(ep ?? 1)))))
       },
       (e) => setError(errorMessage(e)),
     )
   }, [id, ep])
-  useEffect(load, [load])
+  // Reloaded when membership changes, so episodes unlock right after subscribing.
+  useEffect(load, [load, me?.isEntitled])
+  useEffect(() => {
+    if (series) current.current = series.episodes[active]?.number ?? null
+  }, [series, active])
 
   const onViewable = useRef(({ viewableItems }: { viewableItems: ViewToken<EpisodeView>[] }) => {
     const first = viewableItems.find((v) => v.isViewable)
@@ -92,7 +99,7 @@ interface PageProps {
 
 function EpisodePage({ series, episode, height, mode, onEnded }: PageProps) {
   const insets = useSafeAreaInsets()
-  const { saveProgress, progress } = useSession()
+  const { me, saveProgress, progress } = useSession()
   const [paused, setPaused] = useState(false)
   const [time, setTime] = useState({ current: 0, duration: episode.durationSec || 1 })
   const [ready, setReady] = useState(false)
@@ -152,9 +159,17 @@ function EpisodePage({ series, episode, height, mode, onEnded }: PageProps) {
           <View style={styles.lockIcon}>
             <Icon name="lock" size={28} />
           </View>
-          <Text style={styles.lockedTitle}>Episode {episode.number} isn’t available yet</Text>
-          <Text style={styles.lockedText}>This episode isn’t included with your account right now. You can keep watching the free episodes.</Text>
-          <Button title="Back to episodes" variant="glass" onPress={() => router.back()} style={{ marginTop: 18, alignSelf: 'stretch' }} />
+          <Text style={styles.lockedTitle}>Don’t stop now. Episode {episode.number} is waiting.</Text>
+          <Text style={styles.lockedText}>
+            Become a member to watch all {series.episodes.length} episodes of {series.title} and every other series.
+            {me?.trialEligible !== false ? ' Start with a free trial.' : ''}
+          </Text>
+          <Button
+            title={me?.trialEligible !== false ? 'Start my free trial' : 'Become a member'}
+            onPress={() => (me ? router.push('/paywall') : router.push({ pathname: '/(auth)/signup', params: { next: '/paywall' } }))}
+            style={{ marginTop: 18, alignSelf: 'stretch' }}
+          />
+          <Button title="Back to episodes" variant="glass" onPress={() => router.back()} style={{ marginTop: 10, alignSelf: 'stretch' }} />
         </View>
       ) : (
         <Pressable style={StyleSheet.absoluteFill} onPress={() => setPaused((p) => !p)}>

@@ -1,8 +1,9 @@
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { errorMessage } from '../lib/api'
+import { PRIVACY_URL, TERMS_URL } from '../lib/config'
 import { useSession } from '../lib/session'
 import { colors } from '../lib/theme'
 import Button from './Button'
@@ -13,6 +14,8 @@ import Logo from './Logo'
 export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
   const insets = useSafeAreaInsets()
   const { login, signup } = useSession()
+  // Where to continue after signing in (e.g. the membership screen); otherwise back to what they were watching.
+  const { next } = useLocalSearchParams<{ next?: string }>()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,7 +30,9 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
     try {
       if (isSignup) await signup(name.trim() || email.split('@')[0], email.trim(), password)
       else await login(email.trim(), password)
-      // The root layout switches to the app once signed in.
+      if (next === '/paywall') router.replace('/paywall')
+      else if (router.canGoBack()) router.back()
+      else router.replace('/')
     } catch (err) {
       setError(errorMessage(err))
       setBusy(false)
@@ -38,15 +43,15 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
         <View style={styles.top}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.back}>
-            <Icon name="back" />
+          <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} hitSlop={12} style={styles.back} accessibilityLabel="Close">
+            <Icon name="close" />
           </Pressable>
           <Logo size={20} />
           <View style={{ width: 40 }} />
         </View>
 
         <Text style={styles.title}>{isSignup ? 'Create your account' : 'Welcome back'}</Text>
-        <Text style={styles.sub}>{isSignup ? 'Free to join. Start watching in seconds.' : 'Sign in to keep watching where you left off.'}</Text>
+        <Text style={styles.sub}>{isSignup ? 'Save shows to My List and pick up where you left off on any device.' : 'Sign in to keep watching where you left off.'}</Text>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
@@ -79,7 +84,24 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
         />
         <Button title={isSignup ? 'Create account' : 'Sign in'} onPress={submit} busy={busy} disabled={!email || !password} style={{ marginTop: 6 }} />
 
-        <Pressable onPress={() => router.replace(isSignup ? '/(auth)/login' : '/(auth)/signup')} style={styles.switch}>
+        {isSignup && (
+          <Text style={styles.legal}>
+            By creating an account you agree to our{' '}
+            <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>
+              Terms
+            </Text>{' '}
+            and{' '}
+            <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>
+              Privacy Policy
+            </Text>
+            .
+          </Text>
+        )}
+
+        <Pressable
+          onPress={() => router.replace({ pathname: isSignup ? '/(auth)/login' : '/(auth)/signup', params: next ? { next } : {} })}
+          style={styles.switch}
+        >
           <Text style={styles.switchText}>
             {isSignup ? 'Already have an account? ' : 'New to BingeTube? '}
             <Text style={styles.switchLink}>{isSignup ? 'Sign in' : 'Create one'}</Text>
@@ -109,6 +131,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   switch: { alignItems: 'center', marginTop: 10, padding: 8 },
+  legal: { color: colors.muted, fontSize: 12, textAlign: 'center', lineHeight: 17 },
+  link: { color: colors.text2, textDecorationLine: 'underline' },
   switchText: { color: colors.muted, fontSize: 14 },
   switchLink: { color: colors.text, fontWeight: '700' },
 })

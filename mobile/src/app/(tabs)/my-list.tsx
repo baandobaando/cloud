@@ -9,14 +9,22 @@ import { colors } from '../../lib/theme'
 
 export default function MyList() {
   const insets = useSafeAreaInsets()
-  const { catalog, myList } = useSession()
+  const { me, catalog, myList } = useSession()
   const byId = new Map((catalog ?? []).map((s) => [s.id, s]))
   const items = myList.map((id) => byId.get(id)).filter((s) => !!s)
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, flexGrow: 1 }}>
       <Text style={styles.title}>My List</Text>
-      {items.length === 0 ? (
+      {!me ? (
+        <View style={styles.empty}>
+          <Icon name="bookmark" size={40} color={colors.muted} />
+          <Text style={styles.emptyTitle}>Save shows for later</Text>
+          <Text style={styles.emptyText}>Create a free account to keep a list of shows and pick up where you left off.</Text>
+          <Button title="Create free account" onPress={() => router.push('/(auth)/signup')} style={{ marginTop: 10, alignSelf: 'stretch' }} />
+          <Button title="Sign in" variant="glass" onPress={() => router.push('/(auth)/login')} style={{ alignSelf: 'stretch' }} />
+        </View>
+      ) : items.length === 0 ? (
         <View style={styles.empty}>
           <Icon name="bookmark" size={40} color={colors.muted} />
           <Text style={styles.emptyTitle}>Nothing saved yet</Text>

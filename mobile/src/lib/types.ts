@@ -46,8 +46,15 @@ export interface Me {
   name: string
   isAdmin: boolean
   isEntitled: boolean
-  subscription: { currentPeriodEnd: number | null } | null
+  subscription: {
+    currentPeriodEnd: number | null
+    source: 'card' | 'apple' | 'crypto' | 'test' | 'comp'
+    renews?: boolean
+    cancelAtPeriodEnd?: boolean
+    trialEndsAt?: number | null
+  } | null
   profiles: Profile[]
+  trialEligible?: boolean
 }
 
 export interface WatchProgress {

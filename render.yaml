@@ -50,6 +50,11 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      # iPhone app subscriptions (Apple in-app purchase via RevenueCat).
+      - key: REVENUECAT_SECRET_KEY
+        sync: false
+      - key: REVENUECAT_WEBHOOK_AUTH
+        sync: false
       - key: BTCPAY_URL
         sync: false
       - key: BTCPAY_API_KEY

@@ -1,5 +1,7 @@
+import { router } from 'expo-router'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api } from './api'
+import { configurePurchases, identifyPurchaser } from './purchases'
 import type { Me, ProfileState, SeriesSummary } from './types'
 
 interface Session {
@@ -14,6 +16,8 @@ interface Session {
   logout: () => Promise<void>
   deleteAccount: () => Promise<void>
   refresh: () => Promise<void>
+  /** Asks the server to re-check App Store purchases (after buying or restoring), then reloads the account. */
+  syncPurchases: () => Promise<void>
   reloadCatalog: () => void
   toggleMyList: (seriesId: string) => void
   saveProgress: (seriesId: string, episodeNumber: number, position: number) => void
@@ -42,18 +46,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    configurePurchases()
     refresh()
-  }, [refresh])
+    // Anyone can browse and watch the free episodes; an account is needed for lists, progress and membership.
+    reloadCatalog()
+  }, [refresh, reloadCatalog])
 
-  // The catalog and the viewer's list/progress load once signed in (the app is members-only).
+  // App Store purchases follow the signed-in account.
+  const userId = me ? me.id : me === null ? null : undefined
+  useEffect(() => {
+    if (userId !== undefined) identifyPurchaser(userId)
+  }, [userId])
+
   useEffect(() => {
     if (!me) {
       setState({ myList: [], progress: {} })
       return
     }
-    reloadCatalog()
     if (profileId) api.get<ProfileState>(`/profiles/${profileId}/state`).then(setState, () => {})
-  }, [me, profileId, reloadCatalog])
+  }, [me, profileId])
 
   const value = useMemo<Session>(
     () => ({
@@ -63,6 +74,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       myList: state.myList,
       progress: state.progress,
       refresh,
+      syncPurchases: async () => {
+        await api.post('/billing/apple/sync').catch(() => {})
+        await refresh()
+      },
       reloadCatalog,
       login: async (email, password) => {
         await api.post('/auth/login', { email, password })
@@ -81,6 +96,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setMe(null)
       },
       toggleMyList: (seriesId) => {
+        if (!me) {
+          router.push('/(auth)/signup')
+          return
+        }
         if (!profileId) return
         const inList = state.myList.includes(seriesId)
         setState((s) => ({ ...s, myList: inList ? s.myList.filter((id) => id !== seriesId) : [seriesId, ...s.myList] }))

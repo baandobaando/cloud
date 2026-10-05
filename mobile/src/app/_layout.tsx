@@ -16,17 +16,14 @@ function RootStack() {
   }, [ready])
   if (!ready) return null
 
-  // Members-only app: signed-out people only see the welcome and sign-in screens.
+  // Anyone can browse and watch free episodes; sign-in and the membership screen open on top when needed.
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }}>
-      <Stack.Protected guard={!!me}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="series/[id]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="watch/[id]" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-      </Stack.Protected>
-      <Stack.Protected guard={!me}>
-        <Stack.Screen name="(auth)" />
-      </Stack.Protected>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="series/[id]" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="watch/[id]" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+      <Stack.Screen name="(auth)" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="paywall" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
     </Stack>
   )
 }

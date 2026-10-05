@@ -1,28 +1,96 @@
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { router } from 'expo-router'
+import { useState } from 'react'
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import BrandMark from '../../components/BrandMark'
+import Button from '../../components/Button'
 import { errorMessage } from '../../lib/api'
-import { PRIVACY_URL, TERMS_URL } from '../../lib/config'
+import { CONTACT_EMAIL, PRIVACY_URL, SUPPORT_URL, TERMS_URL } from '../../lib/config'
+import { purchasesAvailable, restore } from '../../lib/purchases'
 import { useSession } from '../../lib/session'
 import { colors } from '../../lib/theme'
 import Constants from 'expo-constants'
 
-function Row({ label, value, onPress, danger }: { label: string; value?: string; onPress?: () => void; danger?: boolean }) {
+function Row({ label, value, onPress, danger, busy }: { label: string; value?: string; onPress?: () => void; danger?: boolean; busy?: boolean }) {
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surface2 }]}>
+    <Pressable onPress={onPress} disabled={!onPress || busy} style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surface2 }]}>
       <Text style={[styles.rowLabel, danger && { color: '#f87171' }]}>{label}</Text>
-      {value && <Text style={styles.rowValue}>{value}</Text>}
+      {busy ? <ActivityIndicator color={colors.muted} /> : value ? <Text style={styles.rowValue}>{value}</Text> : null}
     </Pressable>
+  )
+}
+
+const longDate = (ms: number) => new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
+
+function About() {
+  return (
+    <>
+      <Text style={styles.section}>Help & legal</Text>
+      <View style={styles.group}>
+        <Row label="Help & Support" onPress={() => Linking.openURL(SUPPORT_URL)} />
+        <Row label="Contact us" value={CONTACT_EMAIL} onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}`)} />
+        <Row label="Privacy Policy" onPress={() => Linking.openURL(PRIVACY_URL)} />
+        <Row label="Terms of Service" onPress={() => Linking.openURL(TERMS_URL)} />
+      </View>
+    </>
   )
 }
 
 export default function Account() {
   const insets = useSafeAreaInsets()
-  const { me, logout, deleteAccount } = useSession()
-  if (!me) return null
+  const { me, logout, deleteAccount, syncPurchases } = useSession()
+  const [restoring, setRestoring] = useState(false)
+
+  const restorePurchases = async () => {
+    setRestoring(true)
+    try {
+      const found = await restore()
+      await syncPurchases()
+      Alert.alert(found ? 'Purchases restored' : 'Nothing to restore', found ? 'Your membership is active.' : 'We couldn’t find a BingeTube subscription for this Apple ID.')
+    } catch (err) {
+      Alert.alert('Restore failed', errorMessage(err))
+    } finally {
+      setRestoring(false)
+    }
+  }
+
+  if (!me) {
+    return (
+      <ScrollView style={styles.root} contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 40 }}>
+        <Text style={styles.title}>Account</Text>
+        <View style={[styles.card, { flexDirection: 'column', alignItems: 'stretch' }]}>
+          <Text style={styles.name}>Sign in to BingeTube</Text>
+          <Text style={[styles.email, { marginBottom: 10 }]}>Save shows to My List, continue where you left off and unlock every episode.</Text>
+          <Button title="Create free account" onPress={() => router.push('/(auth)/signup')} />
+          <Button title="Sign in" variant="glass" onPress={() => router.push('/(auth)/login')} style={{ marginTop: 10 }} />
+        </View>
+        <About />
+        <View style={styles.footer}>
+          <BrandMark size={28} />
+          <Text style={styles.version}>BingeTube {Constants.expoConfig?.version ?? ''}</Text>
+        </View>
+      </ScrollView>
+    )
+  }
+
+  const sub = me.subscription
+  const active = me.isEntitled
+  const membership = me.isAdmin && !sub
+    ? 'Full access (admin)'
+    : !active
+      ? 'Not a member'
+      : sub?.trialEndsAt
+        ? `Free trial until ${longDate(sub.trialEndsAt)}`
+        : sub?.cancelAtPeriodEnd && sub.currentPeriodEnd
+          ? `Ends ${longDate(sub.currentPeriodEnd)}`
+          : sub?.renews && sub.currentPeriodEnd
+            ? `Renews ${longDate(sub.currentPeriodEnd)}`
+            : sub?.currentPeriodEnd
+              ? `Until ${longDate(sub.currentPeriodEnd)}`
+              : 'Active'
 
   const confirmDelete = () =>
-    Alert.alert('Delete your account?', 'This permanently deletes your account, profiles, My List and watch history. This can’t be undone.', [
+    Alert.alert('Delete your account?', `This permanently deletes your account, My List and watch history. This can’t be undone.${sub?.source === 'apple' && sub.renews ? ' Your App Store subscription is billed by Apple: cancel it in Settings so you aren’t charged again.' : ''}`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete account',
@@ -44,12 +112,17 @@ export default function Account() {
         </View>
       </View>
 
-      <Text style={styles.section}>About</Text>
+      <Text style={styles.section}>Membership</Text>
       <View style={styles.group}>
-        <Row label="Privacy Policy" onPress={() => Linking.openURL(PRIVACY_URL)} />
-        <Row label="Terms of Service" onPress={() => Linking.openURL(TERMS_URL)} />
-        <Row label="Contact us" value="bingetubee@gmail.com" onPress={() => Linking.openURL('mailto:bingetubee@gmail.com')} />
+        <Row label="Status" value={membership} />
+        {!active && <Row label={me.trialEligible ? 'Start free trial' : 'Become a member'} onPress={() => router.push('/paywall')} />}
+        {sub?.source === 'apple' && (
+          <Row label="Manage subscription" onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')} />
+        )}
+        {purchasesAvailable && <Row label="Restore purchases" onPress={restorePurchases} busy={restoring} />}
       </View>
+
+      <About />
 
       <Text style={styles.section}>Account</Text>
       <View style={styles.group}>

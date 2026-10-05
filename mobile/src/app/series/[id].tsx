@@ -22,7 +22,7 @@ const TILE = Math.floor((width - 18 * 2 - 8 * (COLS - 1)) / COLS)
 export default function Series() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const insets = useSafeAreaInsets()
-  const { myList, toggleMyList, progress } = useSession()
+  const { me, myList, toggleMyList, progress } = useSession()
   const [series, setSeries] = useState<SeriesDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [range, setRange] = useState(0)
@@ -31,7 +31,8 @@ export default function Series() {
     setError(null)
     api.get<SeriesDetail>(`/series/${encodeURIComponent(id)}`).then(setSeries, (e) => setError(errorMessage(e)))
   }, [id])
-  useEffect(load, [load])
+  // Reloaded when membership changes, so episodes unlock right after subscribing.
+  useEffect(load, [load, me?.isEntitled])
 
   if (error) return <ErrorView message={error} onRetry={load} />
   if (!series) return <Loading />
