@@ -9,7 +9,7 @@ export const TERMS_URL = `${API_BASE}/terms`
 export const SUPPORT_URL = `${API_BASE}/support`
 /** Apple's standard Terms of Use (EULA), required on the subscription screen. */
 export const APPLE_EULA_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
-export const CONTACT_EMAIL = 'bingetubee@gmail.com'
+export const CONTACT_EMAIL = 'support@binge.tube'
 
 /** RevenueCat public SDK key for the App Store app (set at build time, see README). */
 export const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? ''

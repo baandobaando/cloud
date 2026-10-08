@@ -3,7 +3,7 @@
  * sends (search engines and Google's consent-screen review don't run JavaScript) and the app can show the same text.
  */
 
-export const CONTACT_EMAIL = 'bingetubee@gmail.com'
+export const CONTACT_EMAIL = 'support@binge.tube'
 export const LEGAL_UPDATED = 'October 5, 2026'
 
 const contact = `<a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>`
