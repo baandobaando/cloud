@@ -62,7 +62,16 @@ export const config = {
     keyId: env.APPLE_KEY_ID ?? '',
     // Env vars usually carry the .p8 file on one line with literal \n.
     privateKey: (env.APPLE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
+    /** The iPhone app's bundle ID: native Sign in with Apple tokens are issued for it. */
+    bundleId: env.APPLE_BUNDLE_ID ?? 'tube.binge.app',
   },
+  /** Log in with Facebook: an app from developers.facebook.com (App ID + App Secret). */
+  facebook: {
+    appId: env.FACEBOOK_APP_ID ?? '',
+    appSecret: env.FACEBOOK_APP_SECRET ?? '',
+  },
+  /** The iPhone app's URL scheme: Google/Facebook sign-in started from the app returns to it. */
+  appScheme: env.APP_SCHEME ?? 'bingetube',
   adminEmail: env.ADMIN_EMAIL ?? (isProduction ? '' : 'admin@bingetube.local'),
   adminPassword: env.ADMIN_PASSWORD ?? (isProduction ? '' : 'admin12345'),
   /** Test checkout (no real charge). Never available in production. */

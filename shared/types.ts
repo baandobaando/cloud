@@ -278,7 +278,7 @@ export interface AdminUserRow extends AdminUser {
   paidOrders: number
   totalSpentCents: number
   views30d: number
-  signInMethods: ('password' | 'google' | 'apple')[]
+  signInMethods: ('password' | 'google' | 'apple' | 'facebook')[]
 }
 
 export type AdminUserFilter = 'all' | 'members' | 'comp' | 'expired' | 'free' | 'admins'

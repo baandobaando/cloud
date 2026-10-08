@@ -14,6 +14,11 @@ process.env.APPLE_CLIENT_ID = 'tube.binge.web'
 process.env.APPLE_TEAM_ID = 'TEAM123'
 process.env.APPLE_KEY_ID = 'KEY123'
 const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' })
+process.env.FACEBOOK_APP_ID = 'fb-app'
+process.env.FACEBOOK_APP_SECRET = 'fb-secret'
+// Stands in for Apple's identity-token signing key (published at appleid.apple.com/auth/keys).
+const appleSigning = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 })
+const appleJwk = { ...appleSigning.publicKey.export({ format: 'jwk' }), kid: 'apple-kid', alg: 'RS256', use: 'sig' }
 process.env.APPLE_PRIVATE_KEY = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString().replace(/\n/g, '\\n')
 
 const { default: express } = await import('express')
@@ -49,6 +54,12 @@ before(async () => {
       lastTokenRequest = new URLSearchParams(String(init?.body))
       return new Response(JSON.stringify({ id_token: jwt(nextClaims) }), { status: 200 })
     }
+    if (url === 'https://appleid.apple.com/auth/keys') return new Response(JSON.stringify({ keys: [appleJwk] }), { status: 200 })
+    if (url.startsWith('https://graph.facebook.com/v21.0/oauth/access_token')) {
+      lastTokenRequest = new URL(url).searchParams
+      return new Response(JSON.stringify({ access_token: 'fb-token' }), { status: 200 })
+    }
+    if (url.startsWith('https://graph.facebook.com/v21.0/me')) return new Response(JSON.stringify(nextClaims), { status: 200 })
     return realFetch(input, init)
   }) as typeof fetch
 })
@@ -181,5 +192,86 @@ describe('Delete account', () => {
     assert.equal(res.status, 200)
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM users WHERE email = 'bye@example.com'").get()?.n, 0)
     assert.equal(await me(r.session), null)
+  })
+})
+
+/** An identity token as the iPhone's Sign in with Apple returns it, signed with Apple's (stand-in) key. */
+function appleIdentityToken(claims: Record<string, unknown>, key = appleSigning.privateKey) {
+  const head = `${Buffer.from(JSON.stringify({ alg: 'RS256', kid: 'apple-kid' })).toString('base64url')}.${Buffer.from(JSON.stringify(claims)).toString('base64url')}`
+  return `${head}.${crypto.sign('RSA-SHA256', Buffer.from(head), key).toString('base64url')}`
+}
+
+const nativeApple = (body: Record<string, unknown>) =>
+  realFetch(`${base}/api/auth/apple/native`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+describe('Native Sign in with Apple (iPhone app)', () => {
+  const claims = (extra: Record<string, unknown> = {}) => ({
+    iss: 'https://appleid.apple.com', aud: 'tube.binge.app', sub: 'a-native', exp: Date.now() / 1000 + 300, nonce: 'n-1',
+    email: 'me@privaterelay.appleid.com', email_verified: 'true', ...extra,
+  })
+
+  test('verifies the token against Apple keys and signs in', async () => {
+    const res = await nativeApple({ identityToken: appleIdentityToken(claims()), nonce: 'n-1', name: 'Kai Ro' })
+    assert.equal(res.status, 200)
+    const session = (res.headers.get('set-cookie') ?? '').match(/rf_session=[^;]+/)?.[0]
+    const user = await me(session)
+    assert.equal(user.email, 'me@privaterelay.appleid.com')
+    assert.equal(user.name, 'Kai Ro')
+  })
+
+  test('rejects a forged signature, another app, or a replayed nonce', async () => {
+    const other = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey
+    assert.equal((await nativeApple({ identityToken: appleIdentityToken(claims(), other), nonce: 'n-1' })).status, 401)
+    assert.equal((await nativeApple({ identityToken: appleIdentityToken(claims({ aud: 'tube.binge.web' })), nonce: 'n-1' })).status, 401)
+    assert.equal((await nativeApple({ identityToken: appleIdentityToken(claims()), nonce: 'other' })).status, 401)
+    assert.equal((await nativeApple({ identityToken: appleIdentityToken(claims({ exp: Date.now() / 1000 - 5 })), nonce: 'n-1' })).status, 401)
+  })
+})
+
+describe('Sign-in started from the iPhone app', () => {
+  test('Google hands a one-time code to the app, which trades it for a session once', async () => {
+    const start = await realFetch(`${base}/api/auth/oauth/google/start?app=1`, { redirect: 'manual' })
+    const authorize = new URL(start.headers.get('location')!)
+    const stateCookie = start.headers.get('set-cookie')!.split(';')[0]
+    nextClaims = { iss: 'https://accounts.google.com', aud: 'google-client', sub: 'g-app', exp: Date.now() / 1000 + 300, nonce: authorize.searchParams.get('nonce'), email: 'app@example.com', email_verified: true }
+    const cb = await realFetch(`${base}/api/auth/oauth/google/callback?code=abc&state=${authorize.searchParams.get('state')}`, { redirect: 'manual', headers: { cookie: stateCookie } })
+    const back = new URL(cb.headers.get('location')!)
+    assert.equal(back.protocol, 'bingetube:')
+    assert.equal(cb.headers.get('set-cookie')?.includes('rf_session='), false)
+    const exchange = () => realFetch(`${base}/api/auth/app/exchange`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: back.searchParams.get('code') }) })
+    const first = await exchange()
+    assert.equal(first.status, 200)
+    assert.equal((await me((first.headers.get('set-cookie') ?? '').match(/rf_session=[^;]+/)?.[0])).email, 'app@example.com')
+    assert.equal((await exchange()).status, 400)
+  })
+
+  test('a failed sign-in returns an error to the app', async () => {
+    const start = await realFetch(`${base}/api/auth/oauth/google/start?app=1`, { redirect: 'manual' })
+    const stateCookie = start.headers.get('set-cookie')!.split(';')[0]
+    const cb = await realFetch(`${base}/api/auth/oauth/google/callback?error=access_denied&state=x`, { redirect: 'manual', headers: { cookie: stateCookie } })
+    assert.equal(cb.headers.get('location'), 'bingetube://auth?error=cancelled')
+  })
+})
+
+describe('Log in with Facebook', () => {
+  test('exchanges the code, reads the profile and signs in', async () => {
+    const start = await realFetch(`${base}/api/auth/oauth/facebook/start?next=/plans`, { redirect: 'manual' })
+    const authorize = new URL(start.headers.get('location')!)
+    assert.equal(authorize.host, 'www.facebook.com')
+    const stateCookie = start.headers.get('set-cookie')!.split(';')[0]
+    nextClaims = { id: 'fb-1', name: 'Fay Book', email: 'fay@example.com' }
+    const cb = await realFetch(`${base}/api/auth/oauth/facebook/callback?code=abc&state=${authorize.searchParams.get('state')}`, { redirect: 'manual', headers: { cookie: stateCookie } })
+    assert.equal(cb.headers.get('location'), '/plans')
+    assert.equal(lastTokenRequest?.get('client_secret'), 'fb-secret')
+    const user = await me((cb.headers.get('set-cookie') ?? '').match(/rf_session=[^;]+/)?.[0])
+    assert.deepEqual([user.email, user.name], ['fay@example.com', 'Fay Book'])
+  })
+
+  test('an account without a shared email is refused', async () => {
+    const start = await realFetch(`${base}/api/auth/oauth/facebook/start`, { redirect: 'manual' })
+    const authorize = new URL(start.headers.get('location')!)
+    nextClaims = { id: 'fb-2', name: 'No Mail' }
+    const cb = await realFetch(`${base}/api/auth/oauth/facebook/callback?code=abc&state=${authorize.searchParams.get('state')}`, { redirect: 'manual', headers: { cookie: start.headers.get('set-cookie')!.split(';')[0] } })
+    assert.match(cb.headers.get('location')!, /^\/login\?error=noemail/)
   })
 })

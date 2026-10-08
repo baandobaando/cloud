@@ -9,10 +9,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "tube.binge.app",
-      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "tube.binge.app",
@@ -33,7 +33,9 @@
           "imageWidth": 140,
           "backgroundColor": "#0a0a0b"
         }
-      ]
+      ],
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "scheme": "bingetube",
     "backgroundColor": "#0a0a0b",

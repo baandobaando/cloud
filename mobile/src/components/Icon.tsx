@@ -15,10 +15,17 @@ const PATHS = {
   volume: 'M4 9h4l5-4v14l-5-4H4zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12',
   mute: 'M4 9h4l5-4v14l-5-4H4zM17 9l5 6M22 9l-5 6',
   list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
+  episodes: 'M4 5h16v10H4zM8 19h8M10 9.5v1.5l3-1.5-3-1.5z',
+  next: 'M5 5v14l10-7zM18 5v14',
+  down: 'M6 9l6 6 6-6',
+  rewind: 'M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4 3.5v4h4',
+  forward: 'M19.5 12a7.5 7.5 0 1 1-2.2-5.3M20 3.5v4h-4',
 } as const
 
 export type IconName = keyof typeof PATHS
 const FILLED = new Set<IconName>(['play', 'pause'])
+// Mixed icons: filled shape with a stroked bar.
+const BOTH = new Set<IconName>(['next'])
 
 export default function Icon({ name, size = 22, color = '#fff' }: { name: IconName; size?: number; color?: string }) {
   const filled = FILLED.has(name)
@@ -26,7 +33,7 @@ export default function Icon({ name, size = 22, color = '#fff' }: { name: IconNa
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
         d={PATHS[name]}
-        fill={filled ? color : 'none'}
+        fill={filled || BOTH.has(name) ? color : 'none'}
         stroke={filled ? 'none' : color}
         strokeWidth={2}
         strokeLinecap="round"

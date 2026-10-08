@@ -4386,6 +4386,15 @@ video.feature-hero__preview {
   background: #151515;
 }
 
+.social__btn--facebook {
+  background: #1877f2;
+  color: #fff;
+}
+
+.social__btn--facebook:hover {
+  background: #166fe5;
+}
+
 .auth__or {
   display: flex;
   align-items: center;

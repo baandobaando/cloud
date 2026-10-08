@@ -137,7 +137,7 @@ export default function Users() {
                           <div className="slist__tags">
                             {u.signInMethods.map((x) => (
                               <span key={x} className="slist__tag">
-                                {x === 'password' ? 'Email' : x === 'google' ? 'Google' : 'Apple'}
+                                {x === 'password' ? 'Email' : x === 'google' ? 'Google' : x === 'facebook' ? 'Facebook' : 'Apple'}
                               </span>
                             ))}
                           </div>
@@ -321,7 +321,7 @@ function UserDrawer({ id, onClose, onChanged }: { id: number; onClose: () => voi
           <dt>Joined</dt>
           <dd>{new Date(u.createdAt).toLocaleString()}</dd>
           <dt>Signs in with</dt>
-          <dd>{u.signInMethods.map((x) => (x === 'password' ? 'Email & password' : x === 'google' ? 'Google' : 'Apple')).join(', ') || '—'}</dd>
+          <dd>{u.signInMethods.map((x) => (x === 'password' ? 'Email & password' : x === 'google' ? 'Google' : x === 'facebook' ? 'Facebook' : 'Apple')).join(', ') || '—'}</dd>
           <dt>Last watched</dt>
           <dd>{u.lastWatchedAt ? dateTime(u.lastWatchedAt) : 'Never'}</dd>
           <dt>User ID</dt>

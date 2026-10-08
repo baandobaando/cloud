@@ -75,7 +75,7 @@ interface UserRowDb {
 function toRow(r: UserRowDb): AdminUserRow {
   const methods: AdminUserRow['signInMethods'] = []
   if (r.password_hash.startsWith('scrypt$')) methods.push('password')
-  for (const p of (r.providers ?? '').split(',')) if (p === 'google' || p === 'apple') methods.push(p)
+  for (const p of (r.providers ?? '').split(',')) if (p === 'google' || p === 'apple' || p === 'facebook') methods.push(p)
   return {
     id: r.id,
     email: r.email,

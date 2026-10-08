@@ -9,6 +9,7 @@ import { colors } from '../lib/theme'
 import Button from './Button'
 import Icon from './Icon'
 import Logo from './Logo'
+import SocialButtons from './SocialButtons'
 
 /** Shared sign-in / sign-up screen. */
 export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
@@ -23,6 +24,12 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
   const [busy, setBusy] = useState(false)
   const isSignup = mode === 'signup'
 
+  const done = () => {
+    if (next === '/paywall') router.replace('/paywall')
+    else if (router.canGoBack()) router.back()
+    else router.replace('/')
+  }
+
   const submit = async () => {
     setError(null)
     if (isSignup && password.length < 8) return setError('Password needs at least 8 characters')
@@ -30,9 +37,7 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
     try {
       if (isSignup) await signup(name.trim() || email.split('@')[0], email.trim(), password)
       else await login(email.trim(), password)
-      if (next === '/paywall') router.replace('/paywall')
-      else if (router.canGoBack()) router.back()
-      else router.replace('/')
+      done()
     } catch (err) {
       setError(errorMessage(err))
       setBusy(false)
@@ -54,6 +59,8 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
         <Text style={styles.sub}>{isSignup ? 'Save shows to My List and pick up where you left off on any device.' : 'Sign in to keep watching where you left off.'}</Text>
 
         {error && <Text style={styles.error}>{error}</Text>}
+
+        <SocialButtons onSignedIn={done} onError={setError} />
 
         {isSignup && (
           <TextInput style={styles.input} placeholder="Your name" placeholderTextColor={colors.muted} value={name} onChangeText={setName} textContentType="name" autoComplete="name" maxLength={40} />

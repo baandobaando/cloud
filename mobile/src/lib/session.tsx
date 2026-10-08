@@ -2,6 +2,7 @@ import { router } from 'expo-router'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api } from './api'
 import { configurePurchases, identifyPurchaser } from './purchases'
+import { socialSignIn, type SocialProvider } from './social'
 import type { Me, ProfileState, SeriesSummary } from './types'
 
 interface Session {
@@ -13,6 +14,8 @@ interface Session {
   progress: ProfileState['progress']
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
+  /** Sign in (or up) with Apple, Google or Facebook. Throws `Cancelled` if the person backs out. */
+  signInWith: (provider: SocialProvider) => Promise<void>
   logout: () => Promise<void>
   deleteAccount: () => Promise<void>
   refresh: () => Promise<void>
@@ -85,6 +88,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       },
       signup: async (name, email, password) => {
         await api.post('/auth/signup', { name, email, password })
+        await refresh()
+      },
+      signInWith: async (provider) => {
+        await socialSignIn(provider)
         await refresh()
       },
       logout: async () => {
