@@ -36,6 +36,13 @@
       ]
     ],
     "scheme": "bingetube",
-    "backgroundColor": "#0a0a0b"
+    "backgroundColor": "#0a0a0b",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7caf62ee-995e-49ee-9c67-13c4e20c09a1"
+      }
+    },
+    "owner": "971zor"
   }
 }
