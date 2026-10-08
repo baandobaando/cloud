@@ -126,27 +126,36 @@ export function handleRevenueCatEvent(e: RcEvent) {
  * after a purchase or restore without waiting for the webhook.
  */
 revenuecatRouter.post('/apple/sync', requireUser, rateLimit({ windowMs: 60_000, max: 20 }), async (req, res) => {
-  if (!config.revenuecat.secretKey) throw new HttpError(404, 'Not configured')
+  const { projectId, secretKey } = config.revenuecat
+  if (!projectId || !secretKey) throw new HttpError(404, 'Not configured')
   const userId = req.user!.id
-  const r = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(String(userId))}`, {
-    headers: { Authorization: `Bearer ${config.revenuecat.secretKey}`, Accept: 'application/json' },
-  })
+  const r = await fetch(
+    `https://api.revenuecat.com/v2/projects/${encodeURIComponent(projectId)}/customers/${encodeURIComponent(String(userId))}/subscriptions`,
+    { headers: { Authorization: `Bearer ${secretKey}`, Accept: 'application/json' } },
+  )
+  // A customer RevenueCat has never seen simply has no App Store subscription yet.
+  if (r.status === 404) return res.json(getSubscription(userId))
   if (!r.ok) throw new HttpError(502, 'Could not check your App Store subscription. Please try again.')
   const data = (await r.json()) as {
-    subscriber?: {
-      entitlements?: Record<string, { expires_date?: string | null; product_identifier?: string }>
-      subscriptions?: Record<string, { period_type?: string; unsubscribe_detected_at?: string | null; expires_date?: string | null }>
-    }
+    items?: {
+      status?: string
+      gives_access?: boolean
+      auto_renewal_status?: string
+      current_period_ends_at?: number | null
+      ends_at?: number | null
+    }[]
   }
-  const ent = data.subscriber?.entitlements?.[config.revenuecat.entitlement]
-  if (ent?.expires_date) {
-    const sub = ent.product_identifier ? data.subscriber?.subscriptions?.[ent.product_identifier] : undefined
-    const expiresAt = Date.parse(ent.expires_date)
+  // The App Store subscription that runs latest decides; it unlocks only while RevenueCat says it gives access.
+  const sub = (data.items ?? [])
+    .filter((s) => s.current_period_ends_at || s.ends_at)
+    .sort((a, b) => (b.current_period_ends_at ?? b.ends_at ?? 0) - (a.current_period_ends_at ?? a.ends_at ?? 0))[0]
+  if (sub) {
+    const expiresAt = Number(sub.current_period_ends_at ?? sub.ends_at)
     applyAppleSubscription(userId, {
       expiresAt,
-      trial: sub?.period_type === 'trial',
-      cancelled: !!sub?.unsubscribe_detected_at,
-      expired: expiresAt <= Date.now(),
+      trial: sub.status === 'trialing',
+      cancelled: sub.auto_renewal_status !== 'will_renew',
+      expired: !sub.gives_access || expiresAt <= Date.now(),
     })
   }
   res.json(getSubscription(userId))

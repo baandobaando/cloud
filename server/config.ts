@@ -40,10 +40,12 @@ export const config = {
     syncMinutes: Math.max(1, Number(env.BUNNY_SYNC_MINUTES) || 5),
   },
   /**
-   * iPhone app subscriptions (Apple in-app purchase) through RevenueCat: the secret API key (sk_…) for looking up a
-   * subscriber, the Authorization value set on the RevenueCat webhook, and the entitlement that means "member".
+   * iPhone app subscriptions (Apple in-app purchase) through RevenueCat: the project and its V2 secret API key (sk_…)
+   * for looking up a customer, the Authorization value set on the RevenueCat webhook, and the entitlement that means
+   * "member".
    */
   revenuecat: {
+    projectId: env.REVENUECAT_PROJECT_ID ?? '',
     secretKey: env.REVENUECAT_SECRET_KEY ?? '',
     webhookAuth: env.REVENUECAT_WEBHOOK_AUTH ?? '',
     entitlement: env.REVENUECAT_ENTITLEMENT ?? 'members',

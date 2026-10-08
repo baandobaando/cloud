@@ -51,6 +51,8 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       # iPhone app subscriptions (Apple in-app purchase via RevenueCat).
+      - key: REVENUECAT_PROJECT_ID
+        sync: false
       - key: REVENUECAT_SECRET_KEY
         sync: false
       - key: REVENUECAT_WEBHOOK_AUTH

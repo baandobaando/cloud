@@ -60,8 +60,8 @@ The app uses native video and needs a development build rather than Expo Go:
    shared secret.
 2. Products: add `bingetube_monthly`. Entitlements: create **`members`** and attach the product.
    Offerings: make the default offering contain a **Monthly** package with that product.
-3. API keys: copy the **public Apple SDK key** (`appl_…`) → `EXPO_PUBLIC_REVENUECAT_IOS_KEY` on EAS; copy a **secret key**
-   (`sk_…`) → `REVENUECAT_SECRET_KEY` on Render.
+3. API keys: copy the **public Apple SDK key** (`appl_…`) → `EXPO_PUBLIC_REVENUECAT_IOS_KEY` on EAS; create a **V2 secret key**
+   (`sk_…`) → `REVENUECAT_SECRET_KEY` on Render, with the project ID (`proj…`) → `REVENUECAT_PROJECT_ID`.
 4. Integrations → Webhooks: URL `https://binge.tube/api/billing/webhooks/revenuecat`, and an Authorization header value
    of your choice → the same value in `REVENUECAT_WEBHOOK_AUTH` on Render.
 5. In App Store Connect, set the App Store Server Notifications URL to the one RevenueCat shows (faster updates).
