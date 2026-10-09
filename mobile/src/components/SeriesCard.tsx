@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics'
 import { router } from 'expo-router'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors } from '../lib/theme'
@@ -13,15 +14,17 @@ interface Props {
 }
 
 export default function SeriesCard({ series, width, rank, resumeEpisode }: Props) {
-  const open = () =>
-    resumeEpisode
-      ? router.push({ pathname: '/watch/[id]', params: { id: series.id, ep: String(resumeEpisode) } })
-      : router.push({ pathname: '/series/[id]', params: { id: series.id } })
+  const open = () => {
+    Haptics.selectionAsync().catch(() => {})
+    if (resumeEpisode) router.push({ pathname: '/watch/[id]', params: { id: series.id, ep: String(resumeEpisode) } })
+    else router.push({ pathname: '/series/[id]', params: { id: series.id } })
+  }
   return (
     <Pressable onPress={open} style={({ pressed }) => [{ width, opacity: pressed ? 0.8 : 1 }]}>
       <View>
         <Cover series={series} style={{ width, height: width * (4 / 3) }} />
         {rank !== undefined && <Text style={styles.rank}>{rank}</Text>}
+        {series.isNew && resumeEpisode === undefined && <Text style={styles.newBadge}>NEW</Text>}
         {resumeEpisode !== undefined && (
           <View style={styles.progress}>
             <View style={[styles.progressFill, { width: `${Math.min(100, (resumeEpisode / Math.max(1, series.episodeCount)) * 100)}%` }]} />
@@ -51,6 +54,20 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(255,255,255,0.85)',
     textShadowRadius: 2,
     letterSpacing: -4,
+  },
+  newBadge: {
+    position: 'absolute',
+    top: 7,
+    left: 7,
+    backgroundColor: colors.accent,
+    color: '#fff',
+    fontSize: 9.5,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   progress: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, backgroundColor: 'rgba(255,255,255,0.25)' },
   progressFill: { height: 3, backgroundColor: colors.accent },

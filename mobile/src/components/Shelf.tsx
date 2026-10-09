@@ -1,15 +1,24 @@
 import type { ReactNode } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors } from '../lib/theme'
 
-export default function Shelf({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+export default function Shelf({ title, subtitle, onMore, children }: { title: string; subtitle?: string; onMore?: () => void; children: ReactNode }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        </View>
+        {onMore && (
+          <Pressable onPress={onMore} hitSlop={10}>
+            <Text style={styles.more}>See all</Text>
+          </Pressable>
+        )}
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.track}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.track} decelerationRate="fast">
         {children}
       </ScrollView>
     </View>
@@ -17,9 +26,10 @@ export default function Shelf({ title, subtitle, children }: { title: string; su
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 28 },
-  head: { paddingHorizontal: 18, marginBottom: 12 },
-  title: { color: colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.4 },
+  wrap: { marginTop: 30 },
+  head: { paddingHorizontal: 18, marginBottom: 12, flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
+  title: { color: colors.text, fontSize: 20, fontWeight: '800', letterSpacing: -0.4 },
   subtitle: { color: colors.muted, fontSize: 13, marginTop: 3 },
-  track: { paddingHorizontal: 18, gap: 14 },
+  more: { color: colors.accent, fontSize: 14, fontWeight: '700' },
+  track: { paddingHorizontal: 18, gap: 12 },
 })

@@ -2,14 +2,18 @@ import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
-import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Dimensions, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Button from '../../components/Button'
 import Cover from '../../components/Cover'
 import { ErrorView, Loading } from '../../components/Feedback'
 import Icon from '../../components/Icon'
+import JoinButton from '../../components/JoinButton'
+import SeriesCard from '../../components/SeriesCard'
+import Shelf from '../../components/Shelf'
+import { needsJoin, startJoin } from '../../lib/join'
 import { api, errorMessage } from '../../lib/api'
-import { MEDIA_HEADERS } from '../../lib/config'
+import { API_BASE, MEDIA_HEADERS } from '../../lib/config'
 import { useSession } from '../../lib/session'
 import { colors } from '../../lib/theme'
 import type { SeriesDetail } from '../../lib/types'
@@ -22,7 +26,7 @@ const TILE = Math.floor((width - 18 * 2 - 8 * (COLS - 1)) / COLS)
 export default function Series() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const insets = useSafeAreaInsets()
-  const { me, myList, toggleMyList, progress } = useSession()
+  const { me, myList, toggleMyList, progress, catalog } = useSession()
   const [series, setSeries] = useState<SeriesDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [range, setRange] = useState(0)
@@ -43,17 +47,27 @@ export default function Series() {
   const shown = series.episodes.slice(range * RANGE, range * RANGE + RANGE)
   const minutes = Math.round(series.episodes.reduce((n, e) => n + e.durationSec, 0) / 60)
   const play = (ep: number) => router.push({ pathname: '/watch/[id]', params: { id: series.id, ep: String(ep) } })
+  const lockedCount = series.episodes.filter((e) => e.locked).length
+  const showJoin = needsJoin(me) && lockedCount > 0
+  const similar = (catalog ?? []).filter((s) => s.id !== series.id && s.genres.some((g) => series.genres.includes(g))).slice(0, 12)
+  const share = () =>
+    Share.share({ message: `Watch “${series.title}” on BingeTube 🔥 ${API_BASE}/title/${encodeURIComponent(series.id)}` }).catch(() => {})
 
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + (showJoin ? 110 : 32) }}>
         <View style={[styles.head, { paddingTop: insets.top + 56 }]}>
           <LinearGradient colors={[series.palette[0] ?? '#5a0a1c', colors.bg]} style={StyleSheet.absoluteFill} />
+          {series.posterUrl && (
+            <Image source={{ uri: series.posterUrl, headers: MEDIA_HEADERS }} style={[StyleSheet.absoluteFill, { opacity: 0.55 }]} contentFit="cover" blurRadius={40} />
+          )}
+          <LinearGradient colors={['rgba(10,10,11,0.2)', colors.bg]} locations={[0.3, 1]} style={StyleSheet.absoluteFill} />
           <Cover series={series} style={styles.cover} radius={16} />
           <Text style={styles.title}>{series.title}</Text>
           <Text style={styles.meta}>
-            {series.rating} · {series.episodes.length} episodes · {minutes} min
+            {series.rating} · {series.episodes.length} {series.episodes.length === 1 ? 'episode' : 'episodes'} · {minutes} min
           </Text>
+          {needsJoin(me) && lockedCount > 0 && series.freeEpisodes > 0 && <Text style={styles.free}>First {series.freeEpisodes} episodes free</Text>}
           <View style={styles.tags}>
             {series.genres.map((g) => (
               <Text key={g} style={styles.tag}>
@@ -70,8 +84,11 @@ export default function Series() {
               onPress={() => play(resume ?? 1)}
               style={{ flex: 1 }}
             />
-            <Pressable onPress={() => toggleMyList(series.id)} style={styles.ring} hitSlop={6}>
+            <Pressable onPress={() => toggleMyList(series.id)} style={styles.ring} hitSlop={6} accessibilityLabel={inList ? 'Remove from My List' : 'Add to My List'}>
               <Icon name={inList ? 'check' : 'plus'} size={22} />
+            </Pressable>
+            <Pressable onPress={share} style={styles.ring} hitSlop={6} accessibilityLabel="Share">
+              <Icon name="share" size={20} />
             </Pressable>
           </View>
         </View>
@@ -108,10 +125,29 @@ export default function Series() {
             </Pressable>
           ))}
         </View>
+        {similar.length > 0 && (
+          <Shelf title="More like this">
+            {similar.map((s) => (
+              <SeriesCard key={s.id} series={s} width={Math.round(width * 0.32)} />
+            ))}
+          </Shelf>
+        )}
       </ScrollView>
-      <Pressable onPress={() => router.back()} style={[styles.back, { top: insets.top + 8 }]} hitSlop={10}>
+      <Pressable onPress={() => router.back()} style={[styles.back, { top: insets.top + 8 }]} hitSlop={10} accessibilityLabel="Back">
         <Icon name="back" />
       </Pressable>
+      <View style={[styles.topRight, { top: insets.top + 11 }]}>
+        <JoinButton compact />
+      </View>
+      {showJoin && (
+        <View style={[styles.joinBar, { paddingBottom: insets.bottom + 12 }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.joinTitle}>Unlock all {series.episodes.length} episodes</Text>
+            <Text style={styles.joinSub}>{me?.trialEligible !== false ? '3 days free, then $9.99/month' : 'Every series, no ads, no coins'}</Text>
+          </View>
+          <Button title={me?.trialEligible !== false ? 'Try free' : 'Join now'} onPress={() => startJoin(me)} style={{ minWidth: 120 }} />
+        </View>
+      )}
     </View>
   )
 }
@@ -140,5 +176,23 @@ const styles = StyleSheet.create({
   epCurrent: { borderWidth: 2, borderColor: colors.accent },
   epNum: { color: '#fff', fontSize: 20, fontWeight: '900', margin: 7, letterSpacing: -1 },
   lock: { position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
+  free: { color: colors.ok, fontSize: 13, fontWeight: '700', marginTop: 8 },
+  topRight: { position: 'absolute', right: 14 },
+  joinBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    backgroundColor: 'rgba(20,20,22,0.97)',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+  },
+  joinTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  joinSub: { color: colors.muted, fontSize: 12.5, marginTop: 2 },
   back: { position: 'absolute', left: 14, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)' },
 })

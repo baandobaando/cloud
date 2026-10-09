@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useLocalSearchParams } from 'expo-router'
+import { useEffect, useMemo, useState } from 'react'
 import { ScrollView, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ErrorView, Loading } from '../../components/Feedback'
 import Grid from '../../components/Grid'
 import Icon from '../../components/Icon'
+import JoinButton from '../../components/JoinButton'
 import { useSession } from '../../lib/session'
 import { colors } from '../../lib/theme'
 import { GENRES, type Genre } from '../../lib/types'
@@ -16,6 +18,14 @@ export default function Browse() {
   const [q, setQ] = useState('')
   const [genre, setGenre] = useState<Genre | null>(null)
   const [shown, setShown] = useState(PAGE)
+  // Genre shortcuts on Home open Browse already filtered.
+  const params = useLocalSearchParams<{ genre?: string }>()
+  useEffect(() => {
+    if (params.genre && GENRES.includes(params.genre as Genre)) {
+      setGenre(params.genre as Genre)
+      setShown(PAGE)
+    }
+  }, [params.genre])
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase()
@@ -38,7 +48,10 @@ export default function Browse() {
       }}
       scrollEventThrottle={200}
     >
-      <Text style={styles.title}>Browse</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 18 }}>
+        <Text style={styles.title}>Browse</Text>
+        <JoinButton />
+      </View>
       <View style={styles.search}>
         <Icon name="search" size={18} color={colors.muted} />
         <TextInput

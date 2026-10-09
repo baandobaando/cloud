@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Button from '../../components/Button'
 import Grid from '../../components/Grid'
 import Icon from '../../components/Icon'
+import JoinButton from '../../components/JoinButton'
 import { useSession } from '../../lib/session'
 import { colors } from '../../lib/theme'
 
@@ -15,7 +16,10 @@ export default function MyList() {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 32, flexGrow: 1 }}>
-      <Text style={styles.title}>My List</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 18 }}>
+        <Text style={styles.title}>My List</Text>
+        <JoinButton />
+      </View>
       {!me ? (
         <View style={styles.empty}>
           <Icon name="bookmark" size={40} color={colors.muted} />
