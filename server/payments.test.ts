@@ -339,7 +339,7 @@ describe('Monthly subscriptions', async () => {
 
   test('a free trial whose card passes the $1 check starts, and the hold is released', async () => {
     const { user, subscription } = trialOrder('ok1', 'cardok@test.com')
-    const calls = await withStripe((method, path) => {
+    const calls = await withStripe((_method, path) => {
       if (path === '/checkout/sessions/cs_ok1') return { body: { status: 'complete', subscription: subscription.id } }
       if (path === `/subscriptions/${subscription.id}`) return { body: subscription }
       if (path === '/payment_intents') return { body: { id: 'pi_ok', status: 'requires_capture' } }
@@ -374,7 +374,7 @@ describe('Monthly subscriptions', async () => {
 
   test('a Stripe outage during the check never blocks the customer', async () => {
     const { user, subscription } = trialOrder('err1', 'carderr@test.com')
-    await withStripe((method, path) => {
+    await withStripe((_method, path) => {
       if (path === '/checkout/sessions/cs_err1') return { body: { status: 'complete', subscription: subscription.id } }
       if (path === `/subscriptions/${subscription.id}`) return { body: subscription }
       if (path === '/payment_intents') return { status: 500, body: { error: { type: 'api_error', message: 'boom' } } }
