@@ -81,15 +81,34 @@ export function OrderStatusPage() {
         ) : order.status === 'expired' || order.status === 'failed' ? (
           <>
             <div className="status-card__icon status-card__icon--bad">!</div>
-            <h1>{order.status === 'expired' ? 'Payment window expired' : 'Payment failed'}</h1>
-            <p className="muted">{summary}</p>
-            <p>
-              No access was granted and you weren't charged for this order. If you think you were, contact support with
-              order <code>{order.id.slice(0, 8)}</code>.
-            </p>
-            <Link to="/plans" className="btn btn--accent btn--block">
-              Try Again
-            </Link>
+            {order.failureReason ? (
+              <>
+                <h1>Your card couldn’t be used</h1>
+                <p className="muted">{summary}</p>
+                <p>
+                  {order.failureReason} Your free trial hasn’t started and you weren’t charged. Please try a different
+                  card, or pay with Apple Pay or Google Pay.
+                </p>
+                <p className="muted small">
+                  Tip: many banks block online or recurring payments until you allow them in your banking app.
+                </p>
+                <Link to="/plans" className="btn btn--accent btn--block">
+                  Try another card
+                </Link>
+              </>
+            ) : (
+              <>
+                <h1>{order.status === 'expired' ? 'Payment window expired' : 'Payment failed'}</h1>
+                <p className="muted">{summary}</p>
+                <p>
+                  No access was granted and you weren't charged for this order. If you think you were, contact support with
+                  order <code>{order.id.slice(0, 8)}</code>.
+                </p>
+                <Link to="/plans" className="btn btn--accent btn--block">
+                  Try Again
+                </Link>
+              </>
+            )}
           </>
         ) : (
           <>

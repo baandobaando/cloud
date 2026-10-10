@@ -49,6 +49,7 @@ interface OrderRow {
   created_at: number
   paid_at: number | null
   kind: 'pass' | 'subscription'
+  failure_reason: string | null
 }
 
 function toOrderView(o: OrderRow): OrderView {
@@ -64,6 +65,7 @@ function toOrderView(o: OrderRow): OrderView {
     createdAt: o.created_at,
     paidAt: o.paid_at,
     kind: o.kind,
+    failureReason: o.failure_reason,
   }
 }
 

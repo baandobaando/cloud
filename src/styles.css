@@ -753,6 +753,11 @@ code {
   border: 1px solid var(--line);
 }
 
+.banner--warn {
+  background: rgba(255, 46, 77, 0.1);
+  border-color: rgba(255, 46, 77, 0.45);
+}
+
 /* ---------- Title page ---------- */
 
 .title__hero {

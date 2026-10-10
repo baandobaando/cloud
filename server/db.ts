@@ -169,6 +169,9 @@ db.exec(`CREATE TABLE IF NOT EXISTS user_identities (
 )`)
 
 // Monthly Stripe subscriptions: the subscription a member is on, its state, and one free trial per account.
+// Free trials: the result of the card check run when the trial starts, and why a checkout failed.
+ensureColumn('orders', 'card_check', 'TEXT')
+ensureColumn('orders', 'failure_reason', 'TEXT')
 ensureColumn('subscriptions', 'stripe_customer_id', 'TEXT')
 ensureColumn('subscriptions', 'stripe_subscription_id', 'TEXT')
 ensureColumn('subscriptions', 'status', 'TEXT')

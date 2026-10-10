@@ -239,7 +239,7 @@ function SubscriptionPlan() {
             </button>
             {checkoutError && <div className="form__error">{checkoutError}</div>}
             <p className="muted small sub-plan__fine">
-              Secure checkout by Stripe: card, Apple Pay or Google Pay.{trial ? ' A card is needed to start the trial; nothing is charged today.' : ''}
+              Secure checkout by Stripe: card, Apple Pay or Google Pay.{trial ? ' A card is needed to start the trial; nothing is charged today. We check the card with a temporary $1 hold that’s released right away.' : ''}
             </p>
           </>
         )}

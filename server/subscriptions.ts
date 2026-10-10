@@ -6,7 +6,7 @@ import { config } from './config.ts'
 import { db, transaction } from './db.ts'
 import { HttpError, rateLimit } from './http.ts'
 import { LIVE_SUBSCRIPTION_STATUSES, getSubscription } from './models.ts'
-import { stripe, stripeProvider } from './payments/stripe.ts'
+import { StripeError, stripe, stripeProvider } from './payments/stripe.ts'
 
 /**
  * Monthly memberships through Stripe Billing. Stripe owns the schedule (trial, monthly charges, retries, cancellation);
@@ -26,6 +26,7 @@ export interface StripeSubscription {
   trial_end?: number | null
   ended_at?: number | null
   metadata?: Record<string, string>
+  default_payment_method?: string | null
 }
 
 interface StripeInvoice {
@@ -52,6 +53,8 @@ export function trialEligible(userId: number): boolean {
  * subscription is live, and ends when Stripe ends it. Returns the user id, or null if it can't be matched to a user.
  */
 export function applyStripeSubscription(s: StripeSubscription): number | null {
+  // A trial we cancelled because its card failed the check: it never counted, so it must not use up the trial.
+  if (s.metadata?.card_check === 'declined') return null
   const linked = db.prepare('SELECT user_id FROM subscriptions WHERE stripe_subscription_id = ?').get(s.id) as { user_id: number } | undefined
   const userId = linked?.user_id ?? (Number(s.metadata?.user_id) || null)
   if (!userId || !db.prepare('SELECT 1 FROM users WHERE id = ?').get(userId)) return null
@@ -88,8 +91,61 @@ async function recordInvoice(inv: StripeInvoice) {
   console.log(`[billing] Subscription invoice ${inv.id} paid: user ${userId}, ${inv.amount_paid}c`)
 }
 
+/** Bank decline codes that mean "this card can't be used for this kind of payment", in words a customer understands. */
+const DECLINE_REASONS: Record<string, string> = {
+  transaction_not_allowed: 'Your bank blocked this card for online subscription payments.',
+  card_not_supported: 'Your bank blocked this card for online subscription payments.',
+  do_not_honor: 'Your bank declined the card.',
+  generic_decline: 'Your bank declined the card.',
+  insufficient_funds: 'The card has insufficient funds.',
+  lost_card: 'Your bank declined the card.',
+  stolen_card: 'Your bank declined the card.',
+  expired_card: 'The card has expired.',
+  currency_not_supported: 'This card can’t pay in US dollars.',
+}
+
+/**
+ * Proves a free-trial card can really be charged, so the first payment doesn't fail three days later: places a $1
+ * hold the way a renewal would be charged (off-session) and releases it at once. Saving a card for a trial only runs
+ * a $0 check, which cards blocked for online or recurring payments (common with some banks) still pass.
+ * Returns the reason when the bank refuses; null when the card is fine or the check couldn't run (we never block a
+ * customer over our own or Stripe's hiccup).
+ */
+async function checkTrialCard(sub: StripeSubscription): Promise<string | null> {
+  const pm = sub.default_payment_method
+  if (!pm) return null
+  try {
+    const pi = await stripe<{ id: string; status: string }>('/payment_intents', {
+      amount: '100',
+      currency: 'usd',
+      customer: sub.customer,
+      payment_method: pm,
+      confirm: 'true',
+      off_session: 'true',
+      capture_method: 'manual',
+      description: 'BingeTube card check (temporary hold, released immediately)',
+      'metadata[purpose]': 'trial_card_check',
+      'metadata[subscription]': sub.id,
+    })
+    if (pi.status === 'requires_capture' || pi.status === 'requires_action' || pi.status === 'requires_payment_method') {
+      await stripe(`/payment_intents/${pi.id}/cancel`, {}).catch(() => {})
+    }
+    return null
+  } catch (err) {
+    if (!(err instanceof StripeError) || err.type !== 'card_error') {
+      console.warn('[billing] trial card check could not run:', (err as Error).message)
+      return null
+    }
+    // The bank wants the customer to approve off-session charges: Stripe asks them by email when renewals need it.
+    if (err.code === 'authentication_required' || err.declineCode === 'authentication_required') return null
+    return DECLINE_REASONS[err.declineCode ?? ''] ?? 'Your bank declined the card.'
+  }
+}
+
 /**
  * Finishes the checkout that started a subscription: marks its order paid and links the subscription to the member.
+ * A free trial first passes the card check; a card that fails it ends the trial straight away (no access, nothing
+ * charged, trial not used up) so the customer can try another card or Apple Pay.
  * Safe to call more than once (webhook and the order page's status check can both get here).
  */
 export async function completeSubscriptionOrder(orderId: string, sessionId: string) {
@@ -98,7 +154,38 @@ export async function completeSubscriptionOrder(orderId: string, sessionId: stri
   )
   if (session.status !== 'complete' || !session.subscription) return
   const sub = await fetchSubscription(session.subscription)
-  applyStripeSubscription({ ...sub, metadata: { ...sub.metadata, user_id: sub.metadata?.user_id ?? String(orderUser(orderId)) } })
+  const userId = Number(sub.metadata?.user_id) || orderUser(orderId)
+
+  if (sub.status === 'trialing' && sub.metadata?.card_check !== 'ok') {
+    // Only one caller runs the check; the other sees it running and lets the order page poll again.
+    const claimed = db.prepare("UPDATE orders SET card_check = 'running' WHERE id = ? AND card_check IS NULL").run(orderId).changes === 1
+    if (!claimed) {
+      const state = (db.prepare('SELECT card_check FROM orders WHERE id = ?').get(orderId) as { card_check: string | null } | undefined)?.card_check
+      if (state !== 'ok') return
+    } else {
+      const declined = await checkTrialCard(sub)
+      if (declined) {
+        await stripe(`/subscriptions/${encodeURIComponent(sub.id)}`, { 'metadata[card_check]': 'declined' }).catch(() => {})
+        await stripe(`/subscriptions/${encodeURIComponent(sub.id)}`, undefined, 'DELETE').catch((e) => console.error('[billing] could not cancel declined trial', e))
+        transaction(() => {
+          db.prepare("UPDATE orders SET card_check = 'declined', status = 'failed', failure_reason = ? WHERE id = ?").run(declined, orderId)
+          // Undo the access and trial use the subscription webhook may already have recorded.
+          if (userId) {
+            db.prepare(
+              "UPDATE subscriptions SET stripe_subscription_id = NULL, status = 'canceled', current_period_end = ?, trial_end = NULL WHERE user_id = ? AND (stripe_subscription_id = ? OR stripe_subscription_id IS NULL)",
+            ).run(Date.now(), userId, sub.id)
+            db.prepare('UPDATE users SET trial_used_at = NULL WHERE id = ?').run(userId)
+          }
+        })
+        console.warn(`[billing] Trial card check declined for order ${orderId}: ${declined}`)
+        return
+      }
+      db.prepare("UPDATE orders SET card_check = 'ok' WHERE id = ?").run(orderId)
+      await stripe(`/subscriptions/${encodeURIComponent(sub.id)}`, { 'metadata[card_check]': 'ok' }).catch(() => {})
+    }
+  }
+
+  applyStripeSubscription({ ...sub, metadata: { ...sub.metadata, user_id: sub.metadata?.user_id ?? String(userId) } })
   db.prepare("UPDATE orders SET status = 'paid', paid_at = COALESCE(paid_at, ?), pay_currency = 'CARD' WHERE id = ?").run(Date.now(), orderId)
 }
 
@@ -195,4 +282,20 @@ subscriptionRouter.post('/subscription/resume', async (req, res) => {
   const sub = await stripe<StripeSubscription>(`/subscriptions/${encodeURIComponent(memberSubscriptionId(req.user!.id))}`, { cancel_at_period_end: 'false' })
   applyStripeSubscription(sub)
   res.json(getSubscription(req.user!.id))
+})
+
+/**
+ * Opens Stripe's billing page for the member, where they can change their card, pay a failed invoice and see
+ * receipts. Used by the "update your card" prompt after a failed monthly charge.
+ */
+subscriptionRouter.post('/subscription/portal', rateLimit({ windowMs: 10 * 60 * 1000, max: 20 }), async (req, res) => {
+  const row = db.prepare('SELECT stripe_customer_id FROM subscriptions WHERE user_id = ?').get(req.user!.id) as { stripe_customer_id: string | null } | undefined
+  if (!row?.stripe_customer_id) throw new HttpError(400, "You don't have a card subscription")
+  try {
+    const session = await stripe<{ url: string }>('/billing_portal/sessions', { customer: row.stripe_customer_id, return_url: `${config.appUrl}/account` })
+    res.json({ url: session.url })
+  } catch (err) {
+    console.error('[billing] portal session failed', err)
+    throw new HttpError(502, 'Could not open the billing page. Please try again.')
+  }
 })

@@ -118,6 +118,8 @@ export interface OrderView {
   paidAt: number | null
   /** 'subscription' for the checkout that started a monthly membership. */
   kind?: 'pass' | 'subscription'
+  /** Why a failed order failed, in words for the customer (e.g. the bank blocked the card's trial check). */
+  failureReason?: string | null
 }
 
 export interface SubscriptionView {
@@ -132,6 +134,8 @@ export interface SubscriptionView {
   cancelAtPeriodEnd?: boolean
   /** Set while in the free trial: when the first charge happens. */
   trialEndsAt?: number | null
+  /** The latest monthly charge failed; Stripe is retrying and the member should update their card. */
+  paymentFailed?: boolean
 }
 
 export interface Profile {

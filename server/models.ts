@@ -114,6 +114,7 @@ export function getSubscription(userId: number): SubscriptionView | null {
     renews: live && !row.cancel_at_period_end,
     cancelAtPeriodEnd: live && !!row.cancel_at_period_end,
     trialEndsAt: live && row.status === 'trialing' ? row.trial_end : null,
+    paymentFailed: live && row.status === 'past_due',
   }
 }
 

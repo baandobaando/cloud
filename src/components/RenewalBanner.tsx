@@ -1,12 +1,41 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { errorMessage } from '../api'
+import { openBillingPortal } from '../billingPortal'
 import { useSession } from '../state/Session'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Reminds members shortly before access ends: prepaid passes, and monthly memberships they've cancelled. */
+/**
+ * Reminds members shortly before access ends (prepaid passes, cancelled monthly memberships), and asks them to update
+ * their card when a monthly charge has failed.
+ */
 export default function RenewalBanner() {
   const { me } = useSession()
+  const [busy, setBusy] = useState(false)
   const sub = me?.subscription
+  if (sub?.paymentFailed && sub.source === 'card') {
+    return (
+      <div className="banner banner--warn">
+        <span>
+          <strong>Your last payment didn’t go through.</strong> Update your card to keep watching without interruption.
+        </span>
+        <button
+          className="btn btn--small btn--accent"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true)
+            openBillingPortal().catch((e) => {
+              alert(errorMessage(e))
+              setBusy(false)
+            })
+          }}
+        >
+          Update card
+        </button>
+      </div>
+    )
+  }
   if (!sub || sub.source === 'comp' || sub.currentPeriodEnd === null || sub.renews) return null
   const daysLeft = Math.ceil((sub.currentPeriodEnd - Date.now()) / DAY_MS)
   if (daysLeft > 5) return null

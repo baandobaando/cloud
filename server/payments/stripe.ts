@@ -21,17 +21,35 @@ interface Session {
   currency?: string | null
 }
 
-export async function stripe<T>(path: string, form?: Record<string, string>): Promise<T> {
+/** A failed Stripe API call, keeping Stripe's error code and (for card errors) the bank's decline code. */
+export class StripeError extends Error {
+  status: number
+  type?: string
+  code?: string
+  declineCode?: string
+  constructor(message: string, status: number, type?: string, code?: string, declineCode?: string) {
+    super(message)
+    this.status = status
+    this.type = type
+    this.code = code
+    this.declineCode = declineCode
+  }
+}
+
+export async function stripe<T>(path: string, form?: Record<string, string>, method?: 'DELETE'): Promise<T> {
   const res = await fetch(`${API}${path}`, {
-    method: form ? 'POST' : 'GET',
+    method: method ?? (form ? 'POST' : 'GET'),
     headers: {
       Authorization: `Bearer ${config.stripe.secretKey}`,
       ...(form ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}),
     },
     body: form ? new URLSearchParams(form) : undefined,
   })
-  const data = (await res.json().catch(() => ({}))) as T & { error?: { message?: string } }
-  if (!res.ok) throw new Error(`Stripe ${path} failed (${res.status}): ${data.error?.message ?? 'unknown error'}`)
+  const data = (await res.json().catch(() => ({}))) as T & { error?: { message?: string; type?: string; code?: string; decline_code?: string } }
+  if (!res.ok) {
+    const e = data.error
+    throw new StripeError(`Stripe ${path} failed (${res.status}): ${e?.message ?? 'unknown error'}`, res.status, e?.type, e?.code, e?.decline_code)
+  }
   return data
 }
 

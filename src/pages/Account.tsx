@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { MEMBERSHIP, formatPrice, type OrderView } from '../../shared/types'
 import { IS_DEMO, api, errorMessage } from '../api'
 import { ResetDemoButton } from '../demo/DemoHints'
+import { openBillingPortal } from '../billingPortal'
 import { useSession } from '../state/Session'
 import { useApi } from '../useApi'
 import { useToast } from '../components/Toast'
@@ -99,6 +100,20 @@ export default function Account() {
                   ? `Your free trial ends on ${longDate(sub.trialEndsAt)}. Then ${formatPrice(MEMBERSHIP.priceCents)} a month.`
                   : `${formatPrice(MEMBERSHIP.priceCents)} a month. Next charge on ${longDate(sub.currentPeriodEnd!)}.`}
             </p>
+            {sub.paymentFailed && sub.source === 'card' && (
+              <p className="form__error">
+                Your last payment didn’t go through. Update your card so your membership continues.
+              </p>
+            )}
+            {sub.source === 'card' && (
+              <button
+                className={`btn ${sub.paymentFailed ? 'btn--accent' : 'btn--secondary'}`}
+                disabled={busy}
+                onClick={() => openBillingPortal().catch((e) => alert(errorMessage(e)))}
+              >
+                {sub.paymentFailed ? 'Update card' : 'Payment method & receipts'}
+              </button>
+            )}
             {sub.source === 'apple' ? (
               <p className="muted small">
                 Billed through the App Store. To cancel or change it, open Settings on your iPhone, tap your name, then Subscriptions.

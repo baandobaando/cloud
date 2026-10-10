@@ -307,4 +307,86 @@ describe('Monthly subscriptions', async () => {
     assert.equal(isActive(s), true)
     assert.equal(s.renews, true)
   })
+
+  /** Fake Stripe that answers by path (and method), records each call, and can return errors. */
+  const withStripe = async <T>(handler: (method: string, path: string) => { status?: number; body: unknown } | undefined, fn: () => Promise<T>) => {
+    const real = globalThis.fetch
+    const calls: string[] = []
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      const path = new URL(url).pathname.replace(/^\/v1/, '')
+      calls.push(`${method} ${path}`)
+      const r = handler(method, path) ?? { status: 404, body: { error: { message: 'not found' } } }
+      return new Response(JSON.stringify(r.body), { status: r.status ?? 200 })
+    }) as typeof fetch
+    try {
+      await fn()
+      return calls
+    } finally {
+      globalThis.fetch = real
+    }
+  }
+
+  const trialOrder = (id: string, email: string) => {
+    const { lastInsertRowid } = db.prepare("INSERT INTO users (email, password_hash, name, created_at) VALUES (?, 'x', 'T', ?)").run(email, Date.now())
+    const user = Number(lastInsertRowid)
+    db.prepare(
+      "INSERT INTO orders (id, user_id, plan, months, amount_cents, provider, provider_invoice_id, status, created_at, kind) VALUES (?, ?, 'member', 1, 0, 'stripe', ?, 'pending', ?, 'subscription')",
+    ).run(id, user, `cs_${id}`, Date.now())
+    const subscription = { id: `sub_${id}`, customer: `cus_${id}`, status: 'trialing', default_payment_method: `pm_${id}`, current_period_end: nowS() + 3 * day, trial_end: nowS() + 3 * day, metadata: { user_id: String(user) } }
+    return { user, subscription }
+  }
+
+  test('a free trial whose card passes the $1 check starts, and the hold is released', async () => {
+    const { user, subscription } = trialOrder('ok1', 'cardok@test.com')
+    const calls = await withStripe((method, path) => {
+      if (path === '/checkout/sessions/cs_ok1') return { body: { status: 'complete', subscription: subscription.id } }
+      if (path === `/subscriptions/${subscription.id}`) return { body: subscription }
+      if (path === '/payment_intents') return { body: { id: 'pi_ok', status: 'requires_capture' } }
+      if (path === '/payment_intents/pi_ok/cancel') return { body: { id: 'pi_ok', status: 'canceled' } }
+    }, () => completeSubscriptionOrder('ok1', 'cs_ok1'))
+    assert.ok(calls.includes('POST /payment_intents/pi_ok/cancel'))
+    assert.equal((db.prepare("SELECT status, card_check FROM orders WHERE id = 'ok1'").get() as { status: string; card_check: string }).card_check, 'ok')
+    assert.equal(isActive(getSubscription(user)), true)
+    assert.equal(trialEligible(user), false)
+  })
+
+  test('a free trial whose card the bank blocks is cancelled at once: no access, trial kept, reason shown', async () => {
+    const { user, subscription } = trialOrder('bad1', 'cardbad@test.com')
+    // The subscription webhook may already have granted the trial before the check finishes.
+    applyStripeSubscription(subscription)
+    const calls = await withStripe((method, path) => {
+      if (path === '/checkout/sessions/cs_bad1') return { body: { status: 'complete', subscription: subscription.id } }
+      if (path === `/subscriptions/${subscription.id}`) return { body: method === 'DELETE' ? { ...subscription, status: 'canceled' } : subscription }
+      if (path === '/payment_intents')
+        return { status: 402, body: { error: { type: 'card_error', code: 'card_declined', decline_code: 'transaction_not_allowed', message: 'Your card does not support this type of purchase.' } } }
+    }, () => completeSubscriptionOrder('bad1', 'cs_bad1'))
+    assert.ok(calls.includes(`DELETE /subscriptions/${subscription.id}`))
+    const order = db.prepare("SELECT status, failure_reason FROM orders WHERE id = 'bad1'").get() as { status: string; failure_reason: string }
+    assert.equal(order.status, 'failed')
+    assert.match(order.failure_reason, /blocked this card/)
+    assert.equal(isActive(getSubscription(user)), false)
+    assert.equal(trialEligible(user), true)
+    // Stripe's later "subscription deleted" webhook for that trial changes nothing.
+    assert.equal(applyStripeSubscription({ ...subscription, status: 'canceled', metadata: { ...subscription.metadata, card_check: 'declined' } }), null)
+    assert.equal(trialEligible(user), true)
+  })
+
+  test('a Stripe outage during the check never blocks the customer', async () => {
+    const { user, subscription } = trialOrder('err1', 'carderr@test.com')
+    await withStripe((method, path) => {
+      if (path === '/checkout/sessions/cs_err1') return { body: { status: 'complete', subscription: subscription.id } }
+      if (path === `/subscriptions/${subscription.id}`) return { body: subscription }
+      if (path === '/payment_intents') return { status: 500, body: { error: { type: 'api_error', message: 'boom' } } }
+    }, () => completeSubscriptionOrder('err1', 'cs_err1'))
+    assert.equal(isActive(getSubscription(user)), true)
+  })
+
+  test('a failed monthly charge flags the membership so the member is asked to update their card', () => {
+    const { user, subscription } = trialOrder('pd1', 'pastdue@test.com')
+    applyStripeSubscription({ ...subscription, status: 'past_due', trial_end: null })
+    const s = getSubscription(user)!
+    assert.equal(s.paymentFailed, true)
+    assert.equal(isActive(s), true)
+  })
 })
