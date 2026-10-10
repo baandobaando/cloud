@@ -4,6 +4,7 @@ import Dashboard from './Dashboard'
 import Traffic from './Traffic'
 import SeriesList from './SeriesList'
 import SeriesEditor from './SeriesEditor'
+import Posters from './Posters'
 import Users from './Users'
 import Orders from './Orders'
 import Activity from './Activity'
@@ -27,6 +28,7 @@ export default function Admin() {
           <NavLink to="/admin" end><Icon name="chart" size={18} /> Dashboard</NavLink>
           <NavLink to="/admin/traffic"><Icon name="eye" size={18} /> Traffic</NavLink>
           <NavLink to="/admin/series"><Icon name="film" size={18} /> Series</NavLink>
+          <NavLink to="/admin/posters"><Icon name="image" size={18} /> Posters</NavLink>
           <NavLink to="/admin/orders"><Icon name="coins" size={18} /> Orders</NavLink>
           <NavLink to="/admin/users"><Icon name="users" size={18} /> Users</NavLink>
           <NavLink to="/admin/activity"><Icon name="list" size={18} /> Activity</NavLink>
@@ -43,6 +45,7 @@ export default function Admin() {
           <Route path="series" element={<SeriesList />} />
           <Route path="series/new" element={<SeriesEditor />} />
           <Route path="series/:seriesId" element={<SeriesEditor />} />
+          <Route path="posters" element={<Posters />} />
           <Route path="users" element={<Users />} />
           <Route path="activity" element={<Activity />} />
           <Route path="orders" element={<Orders />} />

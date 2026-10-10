@@ -169,6 +169,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS user_identities (
 )`)
 
 // Monthly Stripe subscriptions: the subscription a member is on, its state, and one free trial per account.
+// Where a series' poster came from: 'official' (real key art) or 'designed' (made from the episodes).
+ensureColumn('series', 'poster_kind', 'TEXT')
 // Free trials: the result of the card check run when the trial starts, and why a checkout failed.
 ensureColumn('orders', 'card_check', 'TEXT')
 ensureColumn('orders', 'failure_reason', 'TEXT')

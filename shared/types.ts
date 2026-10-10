@@ -188,6 +188,17 @@ export interface AdminSeries extends SeriesSummary {
   source?: 'bunny' | 'manual'
 }
 
+/** A series on the admin Posters page. */
+export interface AdminPosterRow {
+  id: string
+  title: string
+  genres: string[]
+  episodeCount: number
+  posterUrl: string | null
+  posterKind: 'official' | 'designed' | null
+  views30d: number
+}
+
 export interface AdminEpisode {
   id: number
   number: number

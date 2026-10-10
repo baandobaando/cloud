@@ -2,6 +2,8 @@ import { buildAnalytics } from './analytics.ts'
 import { buildTraffic } from './traffic.ts'
 import { logAdmin, registerPeopleRoutes } from './adminPeople.ts'
 import crypto from 'node:crypto'
+import dns from 'node:dns/promises'
+import net from 'node:net'
 import fs from 'node:fs'
 import path from 'node:path'
 import { Router, type Request, type RequestHandler } from 'express'
@@ -13,6 +15,7 @@ import {
   RATINGS,
   getPlan,
   type AdminPaymentsStatus,
+  type AdminPosterRow,
   type AdminSeriesDetail,
   type AdminStats,
   type Genre,
@@ -21,7 +24,7 @@ import {
 } from '../shared/types.ts'
 import { requireAdmin } from './auth.ts'
 import { config } from './config.ts'
-import { BUNNY_PREFIX, bunnyConfigured, listCollections } from './bunny.ts'
+import { BUNNY_PREFIX, bunnyConfigured, listCollections, resolveMediaUrl } from './bunny.ts'
 import { getLastSync, importBunnyNow } from './bunnyImport.ts'
 import { checkStripeAccount, getStripeAccountStatus } from './payments/stripe.ts'
 import { mediaDirs } from './catalog.ts'
@@ -350,11 +353,15 @@ const episodeMustExist: RequestHandler = (req, _res, next) => {
   next()
 }
 
+const posterKind = (v: unknown) => (v === 'designed' ? 'designed' : 'official')
+
 adminRouter.post('/series/:id/poster', seriesMustExist, posterUpload, (req, res) => {
   const row = seriesRow(req.params.id as string)
   if (!req.file) throw new HttpError(400, 'No file uploaded')
-  db.prepare('UPDATE series SET poster_url = ?, updated_at = ? WHERE id = ?').run(
+  // An image an admin uploads is real poster art unless the tool that made it says otherwise.
+  db.prepare('UPDATE series SET poster_url = ?, poster_kind = ?, updated_at = ? WHERE id = ?').run(
     `/media/posters/${req.file.filename}`,
+    posterKind(req.body?.kind ?? req.query.kind),
     Date.now(),
     row.id,
   )
@@ -369,9 +376,85 @@ adminRouter.delete('/series/:id/poster', (req, res) => {
     | { video_url: string }
     | undefined
   const fallback = first ? `${first.video_url}/thumbnail.jpg` : null
-  db.prepare('UPDATE series SET poster_url = ?, updated_at = ? WHERE id = ?').run(fallback, Date.now(), row.id)
+  db.prepare('UPDATE series SET poster_url = ?, poster_kind = NULL, updated_at = ? WHERE id = ?').run(fallback, Date.now(), row.id)
   removeLocalMedia(row.poster_url)
   res.json(seriesDetail(row.id))
+})
+
+// ----- Posters -----
+
+const PRIVATE_NETS = new net.BlockList()
+for (const [ip, bits] of [['10.0.0.0', 8], ['172.16.0.0', 12], ['192.168.0.0', 16], ['127.0.0.0', 8], ['169.254.0.0', 16], ['0.0.0.0', 8], ['100.64.0.0', 10]] as const) PRIVATE_NETS.addSubnet(ip, bits)
+for (const [ip, bits] of [['::1', 128], ['fc00::', 7], ['fe80::', 10]] as const) PRIVATE_NETS.addSubnet(ip, bits, 'ipv6')
+
+/** Downloads an image from a public web address (never this server's private network), up to 10 MB. */
+async function fetchPosterImage(raw: string): Promise<{ data: Buffer; ext: string }> {
+  let url: URL
+  try {
+    url = new URL(raw.trim())
+  } catch {
+    throw new HttpError(400, 'That is not a valid link')
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new HttpError(400, 'Use an http(s) image link')
+  const addrs = await dns.lookup(url.hostname, { all: true }).catch(() => [])
+  if (!addrs.length || addrs.some((a) => PRIVATE_NETS.check(a.address, a.family === 6 ? 'ipv6' : 'ipv4'))) throw new HttpError(400, 'That link can’t be used')
+  const res = await fetch(url, { redirect: 'follow', headers: { 'user-agent': 'Mozilla/5.0 (BingeTube poster fetch)' }, signal: AbortSignal.timeout(15_000) }).catch(() => null)
+  if (!res?.ok) throw new HttpError(400, 'Could not download that image. Copy the image address again and retry.')
+  const data = Buffer.from(await res.arrayBuffer())
+  if (data.length > 10 * 1024 ** 2) throw new HttpError(400, 'That image is over 10 MB')
+  // Trust the bytes, not the headers.
+  const ext = data[0] === 0xff && data[1] === 0xd8 ? '.jpg' : data.subarray(0, 4).toString('hex') === '89504e47' ? '.png' : data.subarray(8, 12).toString() === 'WEBP' ? '.webp' : null
+  if (!ext) throw new HttpError(400, 'That link is not a JPG, PNG or WebP image')
+  return { data, ext }
+}
+
+adminRouter.post('/series/:id/poster-url', async (req, res) => {
+  const row = seriesRow(req.params.id as string)
+  const { data, ext } = await fetchPosterImage(String(req.body?.url ?? ''))
+  const filename = `${crypto.randomUUID()}${ext}`
+  fs.writeFileSync(path.join(mediaDirs.posters, filename), data)
+  db.prepare("UPDATE series SET poster_url = ?, poster_kind = 'official', updated_at = ? WHERE id = ?").run(`/media/posters/${filename}`, Date.now(), row.id)
+  removeLocalMedia(row.poster_url)
+  logAdmin(req, 'Set poster from link', `series:${row.id}`, row.title)
+  res.json(seriesDetail(row.id))
+})
+
+/** Series for the Posters page, most watched first, filtered by where their poster came from. */
+adminRouter.get('/posters', (req, res) => {
+  const kind = String(req.query.kind ?? 'designed')
+  const where = kind === 'official' ? "s.poster_kind = 'official'" : kind === 'designed' ? "(s.poster_kind IS NULL OR s.poster_kind = 'designed')" : '1 = 1'
+  const since = Date.now() - 30 * DAY_MS
+  const rows = db
+    .prepare(
+      `SELECT s.id, s.title, s.genres, s.poster_url, s.poster_kind,
+         (SELECT COUNT(*) FROM episodes e WHERE e.series_id = s.id) AS episode_count,
+         (SELECT COUNT(*) FROM episode_views v WHERE v.series_id = s.id AND v.created_at > ?) AS views
+       FROM series s WHERE ${where} ORDER BY views DESC, s.title`,
+    )
+    .all(since) as { id: string; title: string; genres: string; poster_url: string | null; poster_kind: string | null; episode_count: number; views: number }[]
+  const out: AdminPosterRow[] = rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    genres: JSON.parse(r.genres || '[]'),
+    episodeCount: r.episode_count,
+    posterUrl: resolveMediaUrl(r.poster_url),
+    posterKind: (r.poster_kind as AdminPosterRow['posterKind']) ?? null,
+    views30d: r.views,
+  }))
+  res.json(out)
+})
+
+/** Bulk-labels where existing posters came from (used once to record the automated poster run). */
+adminRouter.post('/posters/kinds', (req, res) => {
+  const body = (req.body ?? {}) as { official?: unknown; designed?: unknown }
+  const ids = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').slice(0, 5000) : [])
+  const set = db.prepare('UPDATE series SET poster_kind = ? WHERE id = ?')
+  let n = 0
+  transaction(() => {
+    for (const id of ids(body.official)) n += Number(set.run('official', id).changes)
+    for (const id of ids(body.designed)) n += Number(set.run('designed', id).changes)
+  })
+  res.json({ updated: n })
 })
 
 // ----- Episodes -----
