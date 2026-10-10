@@ -364,7 +364,12 @@ adminRouter.post('/series/:id/poster', seriesMustExist, posterUpload, (req, res)
 
 adminRouter.delete('/series/:id/poster', (req, res) => {
   const row = seriesRow(req.params.id as string)
-  db.prepare('UPDATE series SET poster_url = NULL, updated_at = ? WHERE id = ?').run(Date.now(), row.id)
+  // Back to the default: the thumbnail of the first Bunny episode, if there is one.
+  const first = db.prepare("SELECT video_url FROM episodes WHERE series_id = ? AND video_url LIKE 'bunny:%' ORDER BY number LIMIT 1").get(row.id) as
+    | { video_url: string }
+    | undefined
+  const fallback = first ? `${first.video_url}/thumbnail.jpg` : null
+  db.prepare('UPDATE series SET poster_url = ?, updated_at = ? WHERE id = ?').run(fallback, Date.now(), row.id)
   removeLocalMedia(row.poster_url)
   res.json(seriesDetail(row.id))
 })
