@@ -8,3 +8,5 @@ dist-demo
 .env.*
 !.env.example
 *.tsbuildinfo
+mobile/e2e/shots/
+mobile/e2e/node_modules/
