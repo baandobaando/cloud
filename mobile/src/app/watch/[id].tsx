@@ -2,7 +2,7 @@ import { useEventListener } from 'expo'
 import * as Haptics from 'expo-haptics'
 import { useKeepAwake } from 'expo-keep-awake'
 import { LinearGradient } from 'expo-linear-gradient'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useVideoPlayer, VideoView, type VideoSource } from 'expo-video'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -26,6 +26,7 @@ import EpisodeSheet from '../../components/player/EpisodeSheet'
 import Scrubber from '../../components/player/Scrubber'
 import { api, errorMessage } from '../../lib/api'
 import { MEDIA_HEADERS } from '../../lib/config'
+import { claim, register, silence } from '../../lib/playback'
 import { useSession } from '../../lib/session'
 import { colors } from '../../lib/theme'
 import type { EpisodeView, SeriesDetail } from '../../lib/types'
@@ -182,22 +183,25 @@ function EpisodePage({ series, episode, height, mode, hasNext, onNext, prefs, se
   )
   const player = useVideoPlayer(source, (p) => {
     p.timeUpdateEventInterval = 0.25
+    // Pages loaded ahead of time stay silent until they're the one on screen.
+    p.muted = true
     const saved = progress[series.id]
     if (saved && saved.episodeNumber === episode.number && saved.position > 5) p.currentTime = saved.position
   })
 
+  // Only the episode on screen, on the screen in front, ever plays or makes sound.
+  const focused = useIsFocused()
+  useEffect(() => register(player), [player])
   useEffect(() => {
-    if (!source) return
-    if (active && !paused) player.play()
-    else player.pause()
-  }, [active, paused, source, player])
-
-  // Mute and speed follow the viewer from episode to episode.
-  useEffect(() => {
-    if (!source) return
-    player.muted = prefs.muted
-    player.playbackRate = prefs.rate
-  }, [prefs.muted, prefs.rate, source, player])
+    if (source && active && focused && !paused) {
+      claim(player)
+      player.muted = prefs.muted
+      player.playbackRate = prefs.rate
+      player.play()
+    } else {
+      silence(player)
+    }
+  }, [active, focused, paused, source, player, prefs.muted, prefs.rate])
 
   // Each episode starts playing with the controls showing briefly, like Netflix.
   useEffect(() => {
