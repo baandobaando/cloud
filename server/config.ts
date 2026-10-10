@@ -72,6 +72,8 @@ export const config = {
   },
   /** The iPhone app's URL scheme: Google/Facebook sign-in started from the app returns to it. */
   appScheme: env.APP_SCHEME ?? 'bingetube',
+  /** Series with fewer episodes than this stay out of the public catalog until more are uploaded. */
+  minEpisodes: Math.max(0, Number(env.MIN_EPISODES ?? 5) || 0),
   adminEmail: env.ADMIN_EMAIL ?? (isProduction ? '' : 'admin@bingetube.local'),
   adminPassword: env.ADMIN_PASSWORD ?? (isProduction ? '' : 'admin12345'),
   /** Test checkout (no real charge). Never available in production. */

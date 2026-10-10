@@ -25,9 +25,9 @@ const hours = (sec: number) => (sec >= 3600 ? `${(sec / 3600).toFixed(sec >= 36_
 function issues(s: AdminSeries): string[] {
   const out: string[] = []
   if (!s.posterUrl) out.push('No cover')
-  if (s.episodeCount === 0) out.push('No episodes')
-  else if (s.episodeCount < 5) out.push(`Only ${s.episodeCount} episode${s.episodeCount === 1 ? '' : 's'}`)
-  if (s.freeEpisodes > s.episodeCount) out.push('Free count above episodes')
+  if (s.episodeCount === 0) out.push('No episodes · hidden from viewers')
+  else if (s.episodeCount < 5) out.push(`Only ${s.episodeCount} episode${s.episodeCount === 1 ? '' : 's'} · hidden until 5 are uploaded`)
+  else if (s.freeEpisodes > s.episodeCount) out.push('Free count above episodes')
   return out
 }
 

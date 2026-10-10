@@ -9,11 +9,15 @@ import { SERIES_SELECT, isEntitled, toEpisodeView, toSummary, type EpisodeRow, t
 
 export const catalogRouter = Router()
 
-/** Every published series, newest first. Public, so the same for every viewer. */
+/**
+ * Every published series with enough episodes to be worth starting, newest first. Series still being uploaded
+ * (fewer than config.minEpisodes) appear by themselves once Bunny sync brings in the rest. Public, so the same for
+ * every viewer.
+ */
 export function publicCatalog(): SeriesSummary[] {
   const rows = db
-    .prepare(`${SERIES_SELECT} WHERE s.published = 1 ORDER BY s.created_at DESC`)
-    .all() as unknown as SeriesRow[]
+    .prepare(`${SERIES_SELECT} WHERE s.published = 1 AND (SELECT COUNT(*) FROM episodes e WHERE e.series_id = s.id) >= ? ORDER BY s.created_at DESC`)
+    .all(config.minEpisodes) as unknown as SeriesRow[]
   return rows.map(toSummary)
 }
 
