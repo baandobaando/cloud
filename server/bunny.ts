@@ -140,6 +140,8 @@ function expiryIn(ttlSec: number): number {
 
 /** Turns a stored `bunny:` reference into a playable/viewable URL; other URLs pass through. */
 export function resolveMediaUrl(stored: string | null): string | null {
+  // Files uploaded to this server get a full URL so the iPhone app (which isn't on this origin) can load them too.
+  if (stored?.startsWith('/media/')) return `${config.appUrl.replace(/\/$/, '')}${stored}`
   if (!stored?.startsWith(BUNNY_PREFIX)) return stored
   const { cdnHost: host, tokenKey: key, tokenMode: mode } = config.bunny
   if (!host) return null
